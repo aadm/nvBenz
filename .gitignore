@@ -1,0 +1,12 @@
+# Fuelio archive with personal data (GPS, plates, VINs) — do not commit
+*.fuelio
+vehicle-*-local.csv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~

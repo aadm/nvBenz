@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="nvBenz">
+  <title>nvBenz</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js is a classic UMD script exposing window.Chart (vendored for offline use) -->
+  <script src="vendor/chart.js"></script>
+  <!-- Entry point: ES module. All other modules are imported through the dependency graph. -->
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <nav class="bottom-nav">
+    <a href="#home" class="nav-item" data-view="home">
+      <span class="nav-icon"><svg width="24" height="24" viewBox="0 -960 960 960" fill="currentColor"><path d="M300-240v-360h360v360-360H300v360Zm-140 80v-400H39l441-320 440 320H800v400H160Zm80-80h60v-360h360v360h60v-366L480-780 240-606v366Zm120 0h240v-60H360v60Zm0-120h240v-60H360v60Zm0-120h240v-60H360v60Zm120-160q17 0 28.5-11.5T520-680q0-17-11.5-28.5T480-720q-17 0-28.5 11.5T440-680q0 17 11.5 28.5T480-640Z"/></svg></span>
+      <span class="nav-label">Home</span>
+    </a>
+    <a href="#fillup" class="nav-item" data-view="fillup">
+      <span class="nav-icon"><svg width="24" height="24" viewBox="0 -960 960 960" fill="currentColor"><path d="M160-120v-640q0-33 23.5-56.5T240-840h240q33 0 56.5 23.5T560-760v280h40q33 0 56.5 23.5T680-400v180q0 17 11.5 28.5T720-180q17 0 28.5-11.5T760-220v-288q-9 5-19 6.5t-21 1.5q-42 0-71-29t-29-71q0-32 17.5-57.5T684-694l-84-84 42-42 148 144q15 15 22.5 35t7.5 41v380q0 42-29 71t-71 29q-42 0-71-29t-29-71v-200h-60v300H160Zm80-440h240v-200H240v200Zm480 0q17 0 28.5-11.5T760-600q0-17-11.5-28.5T720-640q-17 0-28.5 11.5T680-600q0 17 11.5 28.5T720-560ZM240-200h240v-280H240v280Zm240 0H240h240Z"/></svg></span>
+      <span class="nav-label">Fill-up</span>
+    </a>
+    <a href="#vehicles" class="nav-item" data-view="vehicles">
+      <span class="nav-icon"><svg width="24" height="24" viewBox="0 -960 960 960" fill="currentColor"><path d="M160-160v-640 292-12 360Zm40-356v264q0 14 9 23t23 9h16q14 0 23-9t9-23v-48h167q5-22 12.5-41.5T478-380H280v-120h336q34-14 71-18t73 1l-66-191q-5-14-16.5-23t-25.5-9H308q-14 0-25.5 9T266-708l-66 192Zm106-64 28-80h292l28 80H306Zm82.5 168.5Q400-423 400-440t-11.5-28.5Q377-480 360-480t-28.5 11.5Q320-457 320-440t11.5 28.5Q343-400 360-400t28.5-11.5ZM692-150l142-142-30-30-112 112-56-56-30 30 86 86Zm169.5-231.5Q920-323 920-240T861.5-98.5Q803-40 720-40T578.5-98.5Q520-157 520-240t58.5-141.5Q637-440 720-440t141.5 58.5ZM160-80q-33 0-56.5-23.5T80-160v-640q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v331q-18-13-38-22.5T800-508v-292H160v640h292q7 22 16.5 42T491-80H160Z"/></svg></span>
+      <span class="nav-label">Vehicles</span>
+    </a>
+    <a href="#more" class="nav-item" data-view="more">
+      <span class="nav-icon"><svg width="24" height="24" viewBox="0 -960 960 960" fill="currentColor"><path d="M520-600v-80h120v-160h80v160h120v80H520Zm120 480v-400h80v400h-80Zm-400 0v-160H120v-80h320v80H320v160h-80Zm0-320v-400h80v400h-80Z"/></svg></span>
+      <span class="nav-label">More</span>
+    </a>
+  </nav>
+  <div id="app">
+    <div id="view-home" class="view"></div>
+    <div id="view-fillup" class="view hidden"></div>
+    <div id="view-stats" class="view hidden"></div>
+    <div id="view-vehicles" class="view hidden"></div>
+    <div id="view-more" class="view hidden"></div>
+  </div>
+  <div id="toast"></div>
+</body>
+</html>
