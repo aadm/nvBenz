@@ -102,7 +102,6 @@ export async function renderStats() {
       <div class="card">
         <div class="label">Cost / 100 km</div>
         <div class="value">${formatCost(costPer100Km, currency)}</div>
-        <div class="sub">for ${formatDistance(100, units)}</div>
       </div>
     </div>
 

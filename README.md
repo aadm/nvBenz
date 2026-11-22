@@ -60,12 +60,14 @@ Chart conventions:
 - Y-axis tick labels are integers (no floats)
 - Clean axis limits: values rounded to nearest 5/10/25/50 depending on magnitude
   (e.g., 51 → 50, 151 → 150)
-- Consumption axis: blue (`#60a5fa` dark / `#2563eb` light), fixed 5-25 km/l on stats
-  (ticks at 5, 15, 25)
+- Consumption axis: blue (`#60a5fa` dark / `#2563eb` light), fixed extent 8-22 km/l
+  with tick labels at 10, 15, 20 (2 km/l buffer above/below the tick range, applied
+  on both the home chart and the stats consumption chart)
 - Cost axis: black/white (theme-aware), dynamic clean range with buffer
 - Price per liter: green (`#4ade80` dark / `#16a34a` light), dynamic clean range
   (sane defaults ~1-3 €/l for typical fuel prices)
-- Monthly bar chart y-axes: bottom always 0, then mid and top (3 ticks total)
+- Monthly bar chart y-axes: bottom tick (0) has its label hidden — only mid and top
+  are displayed
 - No grid lines anywhere
 - Line thickness: 3px
 - Bar chart: solid colors (no outline), adjacent pairs within each month
@@ -168,7 +170,7 @@ gh api repos/aadm/nvBenz/pages -X PUT \
 
 The app will be available at `https://aadm.github.io/nvBenz/`.
 
-The service worker (`sw.js`) uses a versioned cache (currently `nvBenz-v14`). Bump this
+The service worker (`sw.js`) uses a versioned cache (currently `nvBenz-v15`). Bump this
 version in `sw.js` to force a cache wipe on the next launch after an update.
 
 ## Run locally on a PC (Chrome)

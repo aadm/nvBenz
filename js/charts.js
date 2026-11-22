@@ -43,7 +43,7 @@ function roundToClean(value) {
   return Math.round(value / 100) * 100;
 }
 
-// Compute clean min/max with buffer, then stepSize for exactly 3 ticks
+// Compute clean min/max with buffer, stepSize for exactly 3 ticks
 function cleanAxisRange(arr, bufferPct = 0.15) {
   if (!arr || arr.length === 0) return { min: 0, max: 1, step: 0.5 };
   const dataMin = Math.min(...arr);
@@ -58,10 +58,15 @@ function cleanAxisRange(arr, bufferPct = 0.15) {
   const buf = range * bufferPct;
   let min = roundToClean(Math.max(0, dataMin - buf));
   let max = roundToClean(dataMax + buf);
-  // Ensure data fits within axis
   if (min > dataMin) min = roundToClean(dataMin - buf * 1.5);
   if (max < dataMax) max = roundToClean(dataMax + buf * 1.5);
   return { min, max, step: (max - min) / 2 };
+}
+
+// Fixed consumption axis: extent 8-22, ticks displayed at 10, 15, 20
+function consumptionTicksBuilder(scale) {
+  scale.ticks = [10, 15, 20];
+  return scale.ticks;
 }
 
 // X-axis callback: show only 3 labels (first, middle, last)
@@ -73,7 +78,8 @@ function threeXCallback(value, index, values) {
   return '';
 }
 
-/* Home chart: consumption (right y) + TOTAL COST (left y), clean ranges, 3 ticks each */
+/* Home chart: consumption (right y, fixed 8-22 with ticks 10/15/20)
+   + TOTAL COST (left y, dynamic clean range) */
 export function consumptionPriceChart(canvasId, data, mode) {
   destroyChart(canvasId);
   const ctx = document.getElementById(canvasId);
@@ -83,7 +89,6 @@ export function consumptionPriceChart(canvasId, data, mode) {
   const consValues = mode === 'l/100km' ? data.map((d) => d.l100) : data.map((d) => d.kmL);
   const costValues = data.map((d) => d.cost);
 
-  const consRange = cleanAxisRange(consValues);
   const costRange = cleanAxisRange(costValues);
 
   activeCharts[canvasId] = new Chart(ctx, {
@@ -152,12 +157,12 @@ export function consumptionPriceChart(canvasId, data, mode) {
           {
             id: 'y-consumption',
             position: 'right',
+            afterBuildTicks: consumptionTicksBuilder,
             ticks: {
               fontColor: consumptionColor(),
               fontSize: 11,
-              min: consRange.min,
-              max: consRange.max,
-              stepSize: consRange.step,
+              min: 8,
+              max: 22,
               callback: (v) => Math.round(v) + ' km/l'
             },
             gridLines: { display: false, drawBorder: false, drawOnChartArea: false }
@@ -169,7 +174,7 @@ export function consumptionPriceChart(canvasId, data, mode) {
   return activeCharts[canvasId];
 }
 
-/* Stats: consumption chart — FIXED scale 5-25 km/l, exactly 3 ticks */
+/* Stats: consumption chart — fixed extent 8-22, ticks at 10/15/20 */
 export function consumptionChart(canvasId, data, mode, opts = {}) {
   destroyChart(canvasId);
   const ctx = document.getElementById(canvasId);
@@ -216,12 +221,12 @@ export function consumptionChart(canvasId, data, mode, opts = {}) {
           gridLines: { display: false, drawBorder: false }
         }],
         yAxes: [{
+          afterBuildTicks: consumptionTicksBuilder,
           ticks: {
             fontColor: consumptionColor(),
             fontSize: 11,
-            min: 5,
-            max: 25,
-            stepSize: 10,
+            min: 8,
+            max: 22,
             callback: (v) => Math.round(v) + ' km/l'
           },
           gridLines: { display: false, drawBorder: false }
@@ -300,7 +305,8 @@ export function priceChart(canvasId, data, opts = {}) {
   return activeCharts[canvasId];
 }
 
-/* Stats: monthly cost & liters — BAR chart, solid colors, adjacent pairs, 3 y-ticks (0, mid, top) */
+/* Stats: monthly cost & liters — BAR chart, solid colors, adjacent pairs,
+   y-ticks show only mid and top (0 label hidden) */
 export function monthlyChart(canvasId, monthly) {
   destroyChart(canvasId);
   const ctx = document.getElementById(canvasId);
@@ -372,7 +378,8 @@ export function monthlyChart(canvasId, monthly) {
               min: 0,
               max: costTop,
               stepSize: costTop / 2,
-              callback: (v) => '€' + Math.round(v)
+              // Hide the 0 label — only mid and top are shown
+              callback: (v) => v === 0 ? '' : '€' + Math.round(v)
             },
             gridLines: { display: false, drawBorder: false, drawOnChartArea: false }
           },
@@ -385,7 +392,8 @@ export function monthlyChart(canvasId, monthly) {
               min: 0,
               max: literTop,
               stepSize: literTop / 2,
-              callback: (v) => Math.round(v) + ' l'
+              // Hide the 0 label — only mid and top are shown
+              callback: (v) => v === 0 ? '' : Math.round(v) + ' l'
             },
             gridLines: { display: false, drawBorder: false, drawOnChartArea: false }
           }
