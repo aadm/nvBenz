@@ -95,48 +95,50 @@ export async function editVehicle(id) {
   modal.className = 'modal-overlay';
   modal.onclick = (e) => { if (e.target === modal) closeModal(); };
   modal.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-form">
       <h2>${id ? 'Edit vehicle' : 'Add vehicle'}</h2>
-      <form id="veh-form">
-        <div class="form-group">
-          <label>Nickname *</label>
-          <input type="text" id="veh-name" value="${escapeHtml(name)}" placeholder="e.g. Daily driver, Weekend bike" required>
-          <p style="font-size:12px; color:var(--text-secondary); margin-top:6px;">
-            Short name used to quickly switch vehicles. Make + model are shown separately.
-          </p>
-        </div>
-        <div class="form-group">
-          <label>Make</label>
-          <input type="text" id="veh-make" value="${escapeHtml(make)}">
-        </div>
-        <div class="form-group">
-          <label>Model</label>
-          <input type="text" id="veh-model" value="${escapeHtml(model)}">
-        </div>
-        <div class="form-group">
-          <label>Year</label>
-          <input type="number" id="veh-year" value="${escapeHtml(year)}">
-        </div>
-        <div class="form-group">
-          <label>Plate</label>
-          <input type="text" id="veh-plate" value="${escapeHtml(plate)}">
-        </div>
-        <div class="form-group">
-          <label>Kind</label>
-          <select id="veh-kind">
-            <option value="car" ${kind === 'car' ? 'selected' : ''}>Car</option>
-            <option value="motorbike" ${kind === 'motorbike' ? 'selected' : ''}>Motorbike</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Tank capacity (liters)</label>
-          <input type="number" id="veh-tank" value="${escapeHtml(tankCapacity)}" placeholder="optional">
-        </div>
-        <div class="form-group">
-          <label>Default fuel type</label>
-          <select id="veh-fueltype"><option value="">None</option>${fuelSelect}</select>
-        </div>
-      </form>
+      <div class="modal-scroll">
+        <form id="veh-form">
+          <div class="form-group">
+            <label>Nickname *</label>
+            <input type="text" id="veh-name" value="${escapeHtml(name)}" placeholder="e.g. Daily driver, Weekend bike" required>
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:6px;">
+              Short name used to quickly switch vehicles. Make + model are shown separately.
+            </p>
+          </div>
+          <div class="form-group">
+            <label>Make</label>
+            <input type="text" id="veh-make" value="${escapeHtml(make)}">
+          </div>
+          <div class="form-group">
+            <label>Model</label>
+            <input type="text" id="veh-model" value="${escapeHtml(model)}">
+          </div>
+          <div class="form-group">
+            <label>Year</label>
+            <input type="number" id="veh-year" value="${escapeHtml(year)}">
+          </div>
+          <div class="form-group">
+            <label>Plate</label>
+            <input type="text" id="veh-plate" value="${escapeHtml(plate)}">
+          </div>
+          <div class="form-group">
+            <label>Kind</label>
+            <select id="veh-kind">
+              <option value="car" ${kind === 'car' ? 'selected' : ''}>Car</option>
+              <option value="motorbike" ${kind === 'motorbike' ? 'selected' : ''}>Motorbike</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tank capacity (liters)</label>
+            <input type="number" id="veh-tank" value="${escapeHtml(tankCapacity)}" placeholder="optional">
+          </div>
+          <div class="form-group">
+            <label>Default fuel type</label>
+            <select id="veh-fueltype"><option value="">None</option>${fuelSelect}</select>
+          </div>
+        </form>
+      </div>
       <div class="modal-actions">
         ${id ? '<button class="btn-danger" onclick="deleteVehicleModal(' + id + ')">Delete</button>' : ''}
         <button class="btn-secondary" onclick="closeModal()">Cancel</button>

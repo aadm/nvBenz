@@ -641,11 +641,35 @@ select option {
   max-width: 420px;
   width: 100%;
   box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  /* Keep modals within the viewport and scrollable on small screens (iPhone) */
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
 .modal p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px; }
 .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
 .modal-actions button { flex: 1; min-height: 44px; }
+
+/* Sticky-header/sticky-footer modal: title and action buttons stay visible
+   while the form content scrolls in the middle. Used by the vehicle edit
+   and fill-up edit modals which are taller than an iPhone screen. */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 16px;
+}
+.modal-form h2 { flex-shrink: 0; }
+.modal-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.modal-form .modal-actions { flex-shrink: 0; margin-top: 12px; }
 
 /* Chart container */
 .chart-wrap {

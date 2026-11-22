@@ -71,10 +71,12 @@ function openFillupEditModal(fillupId) {
   modal.onclick = (e) => { if (e.target === modal) document.body.removeChild(modal); };
 
   const content = document.createElement('div');
-  content.className = 'modal';
+  content.className = 'modal modal-form';
   content.innerHTML = `
     <h2>Edit fill-up</h2>
-    <div id="fillup-edit-content" style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">Loading...</div>
+    <div class="modal-scroll">
+      <div id="fillup-edit-content" style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">Loading...</div>
+    </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
       <button class="btn-danger" id="btn-delete-fillup" onclick="deleteFillupModal(${fillupId})">Delete</button>
