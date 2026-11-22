@@ -170,7 +170,7 @@ gh api repos/aadm/nvBenz/pages -X PUT \
 
 The app will be available at `https://aadm.github.io/nvBenz/`.
 
-The service worker (`sw.js`) uses a versioned cache (currently `nvBenz-v15`). Bump this
+The service worker (`sw.js`) uses a versioned cache (currently `nvBenz-v16`). Bump this
 version in `sw.js` to force a cache wipe on the next launch after an update.
 
 ## Run locally on a PC (Chrome)

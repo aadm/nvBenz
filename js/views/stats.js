@@ -8,11 +8,11 @@ import { showToast } from '../router.js';
 
 const TIME_RANGES = [
   { label: 'All', key: 'all' },
-  { label: 'This month', key: 'month' },
-  { label: 'Last month', key: 'last-month' },
-  { label: 'This year', key: 'year' },
-  { label: '1 yr ago', key: '1year' },
-  { label: '2 yr ago', key: '2years' }
+  { label: 'This<br>mo', key: 'month' },
+  { label: 'Last<br>mo', key: 'last-month' },
+  { label: 'This<br>yr', key: 'year' },
+  { label: '1yr<br>ago', key: '1year' },
+  { label: '2yr<br>ago', key: '2years' }
 ];
 
 export async function renderStats() {
@@ -63,7 +63,6 @@ export async function renderStats() {
   const odos = filtered.map((f) => parseFloat(f.odo)).filter((o) => o > 0);
   const distance = odos.length > 0 ? Math.max(...odos) - Math.min(...odos) : 0;
   const costPerKm = distance > 0 ? totalCost / distance : 0;
-  const costPer100Km = distance > 0 ? (totalCost / distance) * 100 : 0;
 
   // Average consumption from closed intervals in the filtered data
   const totalIntervalDistance = intervals.reduce((s, i) => s + i.distance, 0);
@@ -97,11 +96,10 @@ export async function renderStats() {
       <div class="card">
         <div class="label">Distance</div>
         <div class="value">${formatDistance(distance, units)}</div>
-        <div class="sub">cost/km ${formatCost(costPerKm, currency)}</div>
       </div>
       <div class="card">
-        <div class="label">Cost / 100 km</div>
-        <div class="value">${formatCost(costPer100Km, currency)}</div>
+        <div class="label">Cost / km</div>
+        <div class="value">${formatCost(costPerKm, currency)}</div>
       </div>
     </div>
 

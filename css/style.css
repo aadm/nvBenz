@@ -681,23 +681,27 @@ select option {
 /* Time range picker (stats) */
 .time-range-picker {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   overflow-x: auto;
   margin-bottom: 16px;
   padding-bottom: 4px;
 }
 .time-range-btn {
+  flex: 1;
   flex-shrink: 0;
+  min-width: 0;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: 4px 4px;
+  font-size: 11px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.2;
+  text-align: center;
   transition: all 0.15s ease;
 }
 .time-range-btn:hover { border-color: var(--text-secondary); color: var(--text); }
