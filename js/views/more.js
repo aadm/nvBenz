@@ -30,11 +30,11 @@ export async function renderMore() {
 
     <div class="section-title" style="margin-top:28px">About</div>
     <p style="font-size:14px; color:var(--text-secondary); line-height:1.6">
-      nvBenz — personal fuel tracker. Offline-first, data stays on your device.
+      nvBenz: mobile-friendly web app to track vehicle fuel consumption.
       Export to GitHub gist for manual backup between devices.
     </p>
     <p style="font-size:13px; color:var(--text-secondary); margin-top:8px">
-      Vanilla JS, IndexedDB and Chart.js. No build step, no server, no tracking.
+      Built in Vanilla JS, IndexedDB and Chart.js using different LLMs in OpenCode by aadm, 21-22 November 2026. Open source, no server, no tracking.
     </p>
   `;
 }
