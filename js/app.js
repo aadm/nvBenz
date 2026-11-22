@@ -28,6 +28,10 @@ let navigate = null;
 
 async function main() {
   await initDb();
+  // Apply stored theme before first render so charts use correct colors
+  const { getSetting } = await import('./db.js');
+  const theme = await getSetting('theme', 'dark');
+  document.documentElement.setAttribute('data-theme', theme);
   // Register service worker for offline caching + PWA install
   if ('serviceWorker' in navigator) {
     try {

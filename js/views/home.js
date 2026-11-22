@@ -1,8 +1,8 @@
 // nvBenz — Home view
 
-import { getVehicles, getFillups, getSetting, setActiveVehicleId, getVehicleWithMostRecentFillup } from '../db.js';
+import { getVehicles, getFillups, getSetting, setSetting, setActiveVehicleId, getVehicleWithMostRecentFillup } from '../db.js';
 import { getStats, formatConsumption, consumptionLabel, formatDistance, formatVolume, formatCost } from '../model.js';
-import { iconForKind, iconChevronRight, iconCheck } from '../icons.js';
+import { iconForKind, iconChevronRight, iconCheck, iconDarkMode, iconLightMode } from '../icons.js';
 
 let statsChart = null;
 
@@ -46,13 +46,16 @@ export async function renderHome() {
 
   const html = `
     <div class="header" style="position:static; border-bottom:none; margin-bottom:20px; padding-top:0;">
-      <button class="vehicle-switcher" id="vehicle-switcher-btn" type="button">
-        <span class="vehicle-switcher-icon">${iconForKind(activeVehicle.kind, 22)}</span>
-        <span class="vehicle-switcher-text">
-          <span class="vehicle-switcher-name">${escapeHtml(activeVehicle.name)}</span>
-        </span>
-        <span class="vehicle-switcher-chevron">${iconChevronRight(18)}</span>
-      </button>
+      <div class="header-row" style="align-items:center; gap:10px;">
+        <button class="vehicle-switcher" id="vehicle-switcher-btn" type="button" style="flex:1;">
+          <span class="vehicle-switcher-icon">${iconForKind(activeVehicle.kind, 22)}</span>
+          <span class="vehicle-switcher-text">
+            <span class="vehicle-switcher-name">${escapeHtml(activeVehicle.name)}</span>
+          </span>
+          <span class="vehicle-switcher-chevron">${iconChevronRight(18)}</span>
+        </button>
+        <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme"></button>
+      </div>
     </div>
 
     <div class="card-grid">
@@ -93,6 +96,17 @@ export async function renderHome() {
   container.innerHTML = html;
 
   document.getElementById('vehicle-switcher-btn').addEventListener('click', () => openVehiclePickerModal(vehicles, activeVehicle.id));
+
+  // Theme toggle: sun/moon icon, flips dark/light, persists, re-renders charts
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  const currentTheme = await getSetting('theme', 'dark');
+  themeBtn.innerHTML = currentTheme === 'dark' ? iconDarkMode(22) : iconLightMode(22);
+  themeBtn.addEventListener('click', async () => {
+    const newTheme = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    await setSetting('theme', newTheme);
+    renderHome(); // re-render so charts pick up the new colors
+  });
   document.getElementById('btn-view-all').addEventListener('click', () => {
     // Show #view-more directly WITHOUT calling router's navigate('more')
     // because navigate('more') triggers renderMore() which would overwrite

@@ -710,6 +710,49 @@ select option {
   margin-bottom: 16px;
   padding-bottom: 4px;
 }
+
+/* Settings: setting block with segmented pill control */
+.setting-block {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-block:last-of-type { border-bottom: none; }
+.setting-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.segmented {
+  display: flex;
+  gap: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+.seg-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  border-radius: calc(var(--radius-sm) - 3px);
+  padding: 8px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+.seg-btn:hover { color: var(--text); }
+.seg-btn.is-active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
 .time-range-btn {
   flex: 1;
   flex-shrink: 0;
