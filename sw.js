@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nvBenz-v21';
+const CACHE_NAME = 'nvBenz-v22';
 const STATIC_ASSETS = [
   './',
   './index.html',

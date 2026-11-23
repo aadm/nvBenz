@@ -43,7 +43,7 @@ export function formatConsumption(value, mode) {
   if (!value || value === 0) return '—';
   // value arrives in km/l; convert to l/100km when that mode is selected
   const v = mode === 'l/100km' ? 100 / value : value;
-  return v.toFixed(2);
+  return v.toFixed(1);
 }
 
 export function formatDistance(km, units) {
@@ -62,9 +62,9 @@ export function formatVolume(liters, units) {
   return liters.toFixed(2) + ' l';
 }
 
-export function formatCost(cost, currency) {
+export function formatCost(cost, currency, decimals = 2) {
   const symbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
-  return symbol + cost.toFixed(2);
+  return symbol + cost.toFixed(decimals);
 }
 
 export function formatPricePerLiter(pricePerL, currency) {

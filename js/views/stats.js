@@ -90,7 +90,7 @@ export async function renderStats() {
       </div>
       <div class="card">
         <div class="label">Total costs</div>
-        <div class="value">${formatCost(totalCost, currency)}</div>
+        <div class="value">${formatCost(Math.ceil(totalCost), currency, 0)}</div>
         <div class="sub">${Math.ceil(totalLiters)} l total</div>
       </div>
       <div class="card">

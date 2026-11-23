@@ -66,7 +66,7 @@ export async function renderHome() {
       </div>
       <div class="card">
         <div class="label">Total costs</div>
-        <div class="value">${formatCost(stats.totalCost, currency)}</div>
+        <div class="value">${formatCost(Math.ceil(stats.totalCost), currency, 0)}</div>
         <div class="sub">${Math.ceil(stats.totalLiters)} l total</div>
       </div>
       <div class="card">
