@@ -4,10 +4,22 @@
 //   pricePerLiter = how much 1 liter costs (€/l)
 //   totalCost     = total euros paid
 //   liters        = derived: totalCost / pricePerLiter (auto-calculated)
+//
+// Numeric inputs are type="text" with inputmode="decimal" so the iOS
+// numeric keypad accepts BOTH "1.75" and "1,75" (European locale comma).
+// Parsing normalizes the comma to a dot before parseFloat.
 
 import { getFuelTypes, getFillups, saveFillup as saveFillupDb, getSetting, setActiveVehicleId, getVehicleWithMostRecentFillup } from '../db.js';
 import { iconChevronLeft } from '../icons.js';
 import { showToast } from '../router.js';
+
+// Parse a numeric string that may use comma or dot as decimal separator
+function parseDecimal(str) {
+  if (str === '' || str === null || str === undefined) return 0;
+  const normalized = String(str).replace(',', '.');
+  const v = parseFloat(normalized);
+  return isNaN(v) ? 0 : v;
+}
 
 let state = {
   vehicleId: null,
@@ -84,9 +96,6 @@ function fuelPriority(name) {
 }
 
 function render(container, ordered) {
-  const vehicle = state.vehicleId ? null : null; // resolved below
-  const currency = '€'; // default EUR
-
   let fuelSelect = '<select id="fu-fuel-type">';
   for (const ft of ordered) {
     fuelSelect += `<option value="${escapeHtml(ft.name)}" ${ft.name === state.fuelType ? 'selected' : ''}>${escapeHtml(ft.name)}</option>`;
@@ -96,8 +105,8 @@ function render(container, ordered) {
   const fullChecked = state.full ? 'checked' : '';
 
   // Derive liters preview
-  const ppl = parseFloat(state.pricePerLiter);
-  const tc = parseFloat(state.totalCost);
+  const ppl = parseDecimal(state.pricePerLiter);
+  const tc = parseDecimal(state.totalCost);
   let litersPreview = '';
   if (ppl > 0 && tc > 0) {
     litersPreview = (tc / ppl).toFixed(2);
@@ -117,7 +126,7 @@ function render(container, ordered) {
 
       <div class="form-group">
         <label>Odometer (km)</label>
-        <input type="number" id="fu-odo" class="big-input" value="${escapeHtml(state.odo)}" placeholder="0" inputmode="decimal" step="any">
+        <input type="text" id="fu-odo" class="big-input" value="${escapeHtml(state.odo)}" placeholder="0" inputmode="decimal" autocomplete="off">
       </div>
 
       <div class="form-group">
@@ -128,17 +137,17 @@ function render(container, ordered) {
       <div class="input-pair">
         <div class="form-group half">
           <label>Price per liter (€/l)</label>
-          <input type="number" id="fu-ppl" class="big-input placeholder-muted" value="${escapeHtml(state.pricePerLiter)}" placeholder="0.00" inputmode="decimal" step="any">
+          <input type="text" id="fu-ppl" class="big-input placeholder-muted" value="${escapeHtml(state.pricePerLiter)}" placeholder="0.00" inputmode="decimal" autocomplete="off">
         </div>
         <div class="form-group half">
           <label>Total paid (€)</label>
-          <input type="number" id="fu-total" class="big-input placeholder-muted" value="${escapeHtml(state.totalCost)}" placeholder="0.00" inputmode="decimal" step="any">
+          <input type="text" id="fu-total" class="big-input placeholder-muted" value="${escapeHtml(state.totalCost)}" placeholder="0.00" inputmode="decimal" autocomplete="off">
         </div>
       </div>
 
       <div class="form-group">
         <label>Liters (calculated)</label>
-        <input type="number" id="fu-liters" class="big-input" value="${escapeHtml(litersPreview)}" readonly style="background:var(--bg-tertiary); color:var(--text-secondary);">
+        <input type="text" id="fu-liters" class="big-input" value="${escapeHtml(litersPreview)}" readonly style="background:var(--bg-tertiary); color:var(--text-secondary);">
       </div>
 
       <div class="toggle-row">
@@ -161,16 +170,16 @@ function render(container, ordered) {
   el('fu-fuel-type').addEventListener('change', (e) => { state.fuelType = e.target.value; });
   el('fu-ppl').addEventListener('input', (e) => {
     state.pricePerLiter = e.target.value;
-    const ppl = parseFloat(state.pricePerLiter);
-    const tc = parseFloat(state.totalCost);
+    const ppl = parseDecimal(state.pricePerLiter);
+    const tc = parseDecimal(state.totalCost);
     const litersEl = el('fu-liters');
     if (ppl > 0 && tc > 0) litersEl.value = (tc / ppl).toFixed(2);
     else litersEl.value = '';
   });
   el('fu-total').addEventListener('input', (e) => {
     state.totalCost = e.target.value;
-    const ppl = parseFloat(state.pricePerLiter);
-    const tc = parseFloat(state.totalCost);
+    const ppl = parseDecimal(state.pricePerLiter);
+    const tc = parseDecimal(state.totalCost);
     const litersEl = el('fu-liters');
     if (ppl > 0 && tc > 0) litersEl.value = (tc / ppl).toFixed(2);
     else litersEl.value = '';
@@ -183,28 +192,16 @@ function render(container, ordered) {
   });
 }
 
-export function setVehicleId(id) { state.vehicleId = id; render(document.getElementById('view-fillup'), []); }
-
 export function toggleFull() { state.full = !state.full; }
-
-export async function newFuelType() {
-  const name = prompt('New fuel type name (e.g. HVO, Diesel+):');
-  if (!name || !name.trim()) return;
-  import('../db.js').then((db) => db.saveFuelType({ name: name.trim(), active: true }))
-    .then(() => {
-      fuelTypes.push({ name: name.trim(), active: true });
-      render(document.getElementById('view-fillup'), fuelTypes);
-    });
-}
 
 export async function saveFillup() {
   if (!state.vehicleId) {
     showToast('No vehicle selected. Add one in Vehicles first.', 'error');
     return;
   }
-  const odo = parseFloat(state.odo);
-  const ppl = parseFloat(state.pricePerLiter);
-  const totalCost = parseFloat(state.totalCost);
+  const odo = parseDecimal(state.odo);
+  const ppl = parseDecimal(state.pricePerLiter);
+  const totalCost = parseDecimal(state.totalCost);
 
   if (!odo || odo <= 0) {
     showToast('Enter odometer', 'error');

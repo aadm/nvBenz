@@ -63,10 +63,32 @@ function cleanAxisRange(arr, bufferPct = 0.15) {
   return { min, max, step: (max - min) / 2 };
 }
 
-// Fixed consumption axis: extent 8-22, ticks displayed at 10, 15, 20
-function consumptionTicksBuilder(scale) {
-  scale.ticks = [10, 15, 20];
-  return scale.ticks;
+// Fixed consumption axis: extent 8-22 km/l with ticks 10/15/20 (km/l mode),
+// or the converted equivalent 4-12 l/100km with ticks 5/8/11 (l/100km mode).
+// 2 units of buffer above/below the tick range, exactly 3 tick labels.
+function consumptionAxis(mode) {
+  if (mode === 'l/100km') {
+    return {
+      min: 4,
+      max: 12,
+      ticks: [5, 8, 11],
+      label: (v) => Math.round(v) + ' l/100km'
+    };
+  }
+  return {
+    min: 8,
+    max: 22,
+    ticks: [10, 15, 20],
+    label: (v) => Math.round(v) + ' km/l'
+  };
+}
+
+function makeConsumptionTicks(mode) {
+  const axis = consumptionAxis(mode);
+  return function (scale) {
+    scale.ticks = axis.ticks;
+    return scale.ticks;
+  };
 }
 
 // X-axis callback: show only 3 labels (first, middle, last)
@@ -157,13 +179,13 @@ export function consumptionPriceChart(canvasId, data, mode) {
           {
             id: 'y-consumption',
             position: 'right',
-            afterBuildTicks: consumptionTicksBuilder,
+            afterBuildTicks: makeConsumptionTicks(mode),
             ticks: {
               fontColor: consumptionColor(),
               fontSize: 11,
-              min: 8,
-              max: 22,
-              callback: (v) => Math.round(v) + ' km/l'
+              min: consumptionAxis(mode).min,
+              max: consumptionAxis(mode).max,
+              callback: consumptionAxis(mode).label
             },
             gridLines: { display: false, drawBorder: false, drawOnChartArea: false }
           }
@@ -221,13 +243,13 @@ export function consumptionChart(canvasId, data, mode, opts = {}) {
           gridLines: { display: false, drawBorder: false }
         }],
         yAxes: [{
-          afterBuildTicks: consumptionTicksBuilder,
+          afterBuildTicks: makeConsumptionTicks(mode),
           ticks: {
             fontColor: consumptionColor(),
             fontSize: 11,
-            min: 8,
-            max: 22,
-            callback: (v) => Math.round(v) + ' km/l'
+            min: consumptionAxis(mode).min,
+            max: consumptionAxis(mode).max,
+            callback: consumptionAxis(mode).label
           },
           gridLines: { display: false, drawBorder: false }
         }]
