@@ -4,7 +4,10 @@ Personal fuel tracker — vehicles, fill-ups, consumption and costs. Built to re
 without being tied to a commercial app. Offline-first: the entire database lives on your
 device (IndexedDB). Installable as a PWA on iPhone and any smartphone.
 
-Launch it here: `https://aadm.github.io/nvBenz/`
+Launch it here: ``
+
+Launch it here: [https://aadm.github.io/nvAppnt/](https://aadm.github.io/nvAppnt/)
+
 
 ## Table of Contents
 
@@ -140,22 +143,28 @@ Required columns (any of these aliases work):
 
 GPS coordinates are stored on each fill-up record for a future location-recording feature.
 
-**Fuel type resolution** (most specific wins):
-1. **Notes keywords** — `hvo`, `diesel+`, `unleaded 95/98`, `lpg`, `petrol`, `benzina`
-2. **Fuelio's numeric FuelType codes** — Fuelio stores per-installation IDs, not
-   names. The mapping in `js/views/import-export.js` (`FUEL_TYPE_CODES`) was
-   inferred from this fleet: `110 → Unleaded 95`, `112 → Unleaded 98`,
-   `201/202/211/219/220 → Diesel`. Edit the table if your Fuelio used
-   different IDs.
-3. Rows resolving to nothing are labeled `Unspecified` (edit the fill-up later
-   to relabel).
+**Fuel type resolution** — Fuelio changed how it stores fuel type between
+versions: older entries carry it as free text in **Notes** (manually typed),
+newer entries use a numeric **FuelType** code. The resolution order reflects
+which the app itself recorded:
+
+1. **Numeric FuelType code** (priority) — when present, non-zero, and mapped.
+   The user's Fuelio IDs: `110 → Unleaded 95`, `112 → Unleaded 98`,
+   `201 → Diesel`, `202 → Diesel+`, `220 → HVO` (table:
+   `FUEL_TYPE_CODES` in `js/views/import-export.js` — edit if your IDs
+   differ). Codes not in the table (e.g. `211`, `219`) fall through to
+   Notes detection.
+2. **Notes keywords** (fallback) — `hvo`, `diesel+`, `unleaded 95/98`,
+   `lpg`, `petrol`, `benzina`.
+3. Neither resolves → `Unspecified` (edit the fill-up later to relabel).
 
 **De-duplication with repair**: re-importing the same CSV reuses the existing
-vehicle (by name) and matches fill-ups by date + odometer. When a matched
-record has no fuel type but the archive provides one, the stored record's
-fuel type (and GPS, if missing) is **updated in place** instead of skipped.
-Re-import your Fuelio archive once to backfill fuel types on previously
-imported rows — the summary reports how many were repaired.
+vehicle (by name) and matches fill-ups by date + odometer. When the archive
+resolves a different (or missing) fuel type than what is stored, the record
+is **corrected in place** — this both backfills Unspecified rows and fixes
+rows typed by an earlier, wrong mapping. Stored types are never downgraded
+to Unspecified. The import log lists every correction (`old → new`) and the
+summary reports the count.
 
 ## CSV format
 
@@ -295,8 +304,14 @@ All user-facing text lives in the view modules under `js/views/`. Key locations:
 
 ## TODO / future ideas
 
+- Per-vehicle preferred fuel type, inferred at import time: after all rows are
+  processed, take the majority resolved type per vehicle and (a) store it as
+  the vehicle's `preferredFuelType` (shown/editable in the vehicle form and
+  pre-selected on the fill-up screen) and optionally (b) apply it to that
+  vehicle's remaining Unspecified rows. Implement as a second pass at the end
+  of `importFuelioCsv` — the counts are already available in the row loop
 - Settings option to configure the fixed price-per-liter chart range
-  (currently hardcoded 1-3 €/l in `js/charts.js` `priceChart`)
+  (currently hardcoded 1.5-2.5 €/l in `js/charts.js` `priceChart`)
 - "Import from gist" button to restore data on a second phone (export already works)
 - GPS recording of refueling location from the fill-up form (lat/lng already
   stored on Fuelio import, ready to use)
@@ -348,7 +363,7 @@ Favicon (used by browsers like Chrome, Firefox etc) is the Google Material Symbo
 
 ## Icon Generation
 
-I started from the icon drawn for nvAppnt. Then I simply added the favicon downloaded as svg and placed it in line with the black middle stripe, stretched the fuel pump until it was roughly in line with the colored ribbon and that was it.
+I started from the icon drawn for [nvAppnt](https://github.com/aadm/nvAppnt) in in Inkscape, added the favicon above, and placed the fuel pump roughly in line with the colored ribbon, stretched until balanced and that was it.
 
 (I also tried for several minutes to make something nicer in Gemini and Claude but the results were terrible; honestly this is what baffles me -- LLM that can produce a whole FPS game from scratch with minimal prompts, drawings and videos of pelicans and otters doing absurd things, but thn you ask for a super simple, clean icon and it all falls apart... maybe the singularity is not that close).
 

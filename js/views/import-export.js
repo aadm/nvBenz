@@ -225,21 +225,19 @@ const VEHICLE_COLUMN_ALIASES = {
 // FuelType column.
 const REQUIRED_LOG_FIELDS = ['date', 'odo', 'liters', 'cost'];
 
-// Fuelio's numeric FuelType column codes. Fuelio assigns per-installation IDs
-// rather than storing names. This mapping was inferred from the actual fleet:
-//   110 → Peugeot 3008 Pure Tech / Moto Guzzi V7 / Volvo XC60 / CRF (all petrol)
-//   112 → Moto Guzzi V7 (premium petrol)
-//   201/202/211/219/220 → VW California BiTDi / BMW 320d (diesel family)
-// Notes-based detection (hvo, diesel+…) always takes priority over the code.
-// Edit this table if your Fuelio installation used different IDs.
+// Fuelio's numeric FuelType column codes (later Fuelio versions store the
+// type as a per-installation numeric ID instead of Notes text). Mapping
+// provided by the user from their Fuelio setup:
+//   110 = Unleaded 95, 112 = Unleaded 98, 201 = Diesel,
+//   202 = Diesel+,     220 = HVO
+// Codes present in the CSV but NOT listed here (e.g. 211, 219) fall back
+// to Notes keyword detection. Edit this table if your IDs differ.
 const FUEL_TYPE_CODES = {
   110: 'Unleaded 95',
   112: 'Unleaded 98',
   201: 'Diesel',
-  202: 'Diesel',
-  211: 'Diesel',
-  219: 'Diesel',
-  220: 'Diesel'
+  202: 'Diesel+',
+  220: 'HVO'
 };
 
 function getField(rowObj, aliases) {
@@ -409,17 +407,19 @@ async function importFuelioCsv(file) {
         const latRaw = getField(f, COLUMN_ALIASES.lat);
         const lngRaw = getField(f, COLUMN_ALIASES.lng);
 
-        // Fuel type resolution, most specific first:
-        //   1. Notes keywords (hvo, diesel+, …) — always win
-        //   2. Fuelio's numeric FuelType code column
-        //   3. nvBenz's own exported fuelType name column (plain CSVs)
-        let fuelType = normalizeFuelType(notes) || 'Unspecified';
+        // Fuel type resolution — the numeric FuelType code has PRIORITY when
+        // present and mapped (later Fuelio versions), because it is what the
+        // app itself recorded. Notes keyword detection is the fallback for
+        // older entries (code empty or 0) and for unmapped codes.
+        let fuelType = 'Unspecified';
+        const codeRaw = f['FuelType'];
+        const hasCode = codeRaw !== undefined && codeRaw !== '' && codeRaw !== '0';
+        if (hasCode) {
+          const code = parseInt(codeRaw, 10);
+          if (!isNaN(code) && FUEL_TYPE_CODES[code]) fuelType = FUEL_TYPE_CODES[code];
+        }
         if (fuelType === 'Unspecified') {
-          const codeRaw = f['FuelType'];
-          if (codeRaw !== undefined && codeRaw !== '') {
-            const code = parseInt(codeRaw, 10);
-            if (!isNaN(code) && FUEL_TYPE_CODES[code]) fuelType = FUEL_TYPE_CODES[code];
-          }
+          fuelType = normalizeFuelType(notes) || 'Unspecified';
         }
         if (fuelType === 'Unspecified') {
           const nameRaw = f['fuelType'];
@@ -447,11 +447,13 @@ async function importFuelioCsv(file) {
         const key = date + '|' + odo.toString();
         const existing = existingByKey.get(key);
         if (existing) {
-          // Duplicate row — but if the stored record lacks a fuel type and the
-          // archive provides one, repair it in place so re-importing the same
-          // Fuelio archive upgrades older data.
+          // Duplicate row — correct the stored record when the archive
+          // resolves a different (or missing) fuel type, so re-importing
+          // both repairs Unspecified records and fixes previously
+          // mis-mapped ones. Stored types are never downgraded to
+          // Unspecified by an empty archive row.
           const existingFt = existing.fuelType || '';
-          if (fuelType !== 'Unspecified' && (!existingFt || existingFt === 'Unspecified')) {
+          if (fuelType !== 'Unspecified' && fuelType !== existingFt) {
             await saveFillup({
               ...existing,
               fuelType,
@@ -459,7 +461,7 @@ async function importFuelioCsv(file) {
               lng: existing.lng != null ? existing.lng : lng
             });
             repaired++;
-            log.push({ level: 'info', message: `${file.name} row ${rowNum}: fuel type repaired → ${fuelType}` });
+            log.push({ level: 'info', message: `${file.name} row ${rowNum}: fuel type ${existingFt || '(none)'} → ${fuelType}` });
           } else {
             log.push({ level: 'info', message: `${file.name} row ${rowNum}: already imported (same date + odo) — skipped` });
           }
