@@ -113,7 +113,12 @@ export function computeIntervals(fillups) {
         liters: 0,
         cost: 0,
         count: 0,
-        fillupIds: [f.id]
+        // The opening fill's fuel belongs to the interval that just closed
+        // at it (its id is already in that interval's fillupIds as the
+        // closing fill). Starting empty keeps every fill-up in exactly one
+        // interval, so the home list's fuel label reflects only the fuel
+        // actually filled during each window.
+        fillupIds: []
       };
     } else {
       // Partial fill — accumulate into open interval
