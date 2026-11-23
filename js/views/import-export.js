@@ -23,9 +23,10 @@ export async function renderImportExport() {
 
     <div class="section-title">Export your data</div>
     <p style="font-size:14px; color:var(--text-secondary); margin-bottom:12px">
-      Download a CSV backup of vehicles, fuel types and fill-ups.
+      CSV: single fill-ups table (spreadsheet-friendly, re-importable).<br>
+      JSON: complete archive — vehicles, fuel types, fill-ups — for backup.
     </p>
-    <button class="btn-secondary" id="btn-export-csv" style="width:100%">Export CSV</button>
+    <button class="btn-secondary" id="btn-export-csv" style="width:100%">Export fill-ups (CSV)</button>
     <button class="btn-secondary" id="btn-export-json" style="width:100%; margin-top:8px">Export JSON snapshot</button>
 
     <div class="section-title" style="margin-top:28px">Import Fuelio archive</div>
@@ -78,17 +79,21 @@ function showImportLogModal() {
 }
 
 async function exportCsv() {
-  const vehicles = await getVehicles();
-  const fuelTypes = await getFuelTypes();
-  const fillups = await getFillups();
-
-  const blob = new Blob([
-    csvSection(vehiclesToCsv(vehicles)),
-    csvSection(fuelTypesToCsv(fuelTypes)),
-    csvSection(fillupsToCsv(fillups))
-  ].join('\n'), { type: 'text/csv;charset=utf-8' });
-  downloadBlob(blob, 'nvBenz-export.csv');
-  showToast('CSV exported', 'success');
+  try {
+    const fillups = await getFillups();
+    if (!fillups || fillups.length === 0) {
+      showToast('No fill-ups to export', 'error');
+      return;
+    }
+    // Single clean fill-ups table — opens correctly in any spreadsheet and
+    // is directly re-importable (plain CSV mode recognizes all columns).
+    const blob = new Blob([csvSection(fillupsToCsv(fillups))], { type: 'text/csv;charset=utf-8' });
+    downloadBlob(blob, 'nvBenz-fillups.csv');
+    showToast('CSV exported', 'success');
+  } catch (err) {
+    console.error('nvBenz: CSV export failed', err);
+    showToast('CSV export failed: ' + err.message, 'error');
+  }
 }
 
 async function exportJson() {
@@ -146,7 +151,9 @@ function downloadBlob(blob, filename) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Revoke only after the download has had time to start — revoking the
+  // object URL synchronously aborts the download in Safari/iOS.
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 // ---------- Fuelio import ----------

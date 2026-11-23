@@ -182,22 +182,23 @@ summary reports the count.
 
 ## CSV format
 
-**vehicles.csv**
-```
-id,name,make,model,year,plate,kind,tankCapacity,defaultFuelTypeId,active,createdAt,updatedAt
-```
+The CSV export ("Export fill-ups") produces a single clean fill-ups table —
+`nvBenz-fillups.csv` — that opens correctly in any spreadsheet and is directly
+re-importable via the plain-CSV import mode:
 
-**fillups.csv**
 ```
 id,vehicleId,date,odo,liters,cost,full,fuelType,notes,lat,lng
 ```
 - `date`: `yyyy-MM-dd` or `yyyy-MM-ddTHH:mm`
 - `full`: `1` for full tank, `0` for partial
+- `cost`: always EUR (see the currency section)
 
-**fuel_types.csv**
-```
-id,name,active
-```
+The JSON export contains the complete archive (vehicles, fuel types,
+fill-ups) and is the format to use for backups.
+
+Download note: the blob object URL is revoked only after a delay — revoking
+it synchronously after the anchor click silently aborts the download in
+Safari/iOS (this was the CSV export bug).
 
 ## Export to GitHub gist
 

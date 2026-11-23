@@ -120,32 +120,32 @@ export async function renderHome() {
     import('./fillup-list.js').then((m) => m.renderFillupList(activeVehicle.id));
   });
 
-  // Render recent fill-ups (limit to 5), most recent first
-  const recent = [...stats.intervals].reverse().slice(0, 5);
+  // Render recent fill-ups (last 5), most recent first — same row format
+  // as the View All list; tap a row to edit it in place
+  const allFillups = await getFillups(activeVehicle.id);
+  const sortedFillups = [...allFillups].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const recent = sortedFillups.slice(0, 5);
   const listEl = document.getElementById('home-recent-list');
   if (recent.length === 0) {
     listEl.innerHTML = '<div class="list-row"><div class="main"><div class="title">No fill-ups yet</div><div class="subtitle">Log your first refueling</div></div></div>';
   } else {
-    // Map fill-up id -> fuel type so each interval can report its fuel(s)
-    const allFillups = await getFillups(activeVehicle.id);
-    const fuelById = new Map(allFillups.map((f) => [String(f.id), f.fuelType || '']));
-    listEl.innerHTML = recent.map((i) => {
-      const date = i.endDate.slice(0, 10);
-      // formatConsumption converts km/l -> l/100km when that mode is selected
-      const consLabel = i.consumption > 0 ? formatConsumption(i.consumption, consumptionMode) : '—';
-      const trailing = consLabel === '—' ? '—' : `${consLabel} ${modeLabel}`;
-      const fuels = [...new Set((i.fillupIds || []).map((id) => fuelById.get(String(id))).filter(Boolean))];
-      const fuelLabel = fuels.length ? ` &bull; ${escapeHtml(fuels.join(' + '))}` : '';
-      return `
-        <div class="list-row">
-          <div class="main">
-            <div class="title">${escapeHtml(date)}</div>
-            <div class="subtitle">${formatDistance(i.distance, units)} &bull; ${formatVolume(i.liters, units)} &bull; ${formatCost(i.cost, currency)}${fuelLabel}</div>
-          </div>
-          <div class="trailing">${trailing}</div>
+    listEl.innerHTML = recent.map((f) => `
+      <div class="list-row fillup-row" data-id="${f.id}">
+        <div class="main">
+          <div class="title">${escapeHtml(f.date.slice(0, 10).replace(/-/g, '/'))}</div>
+          <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)} &bull; ${f.full ? 'Full' : 'Partial'}${f.fuelType ? ' &bull; ' + escapeHtml(f.fuelType) : ''}</div>
         </div>
-      `;
-    }).join('');
+        <div class="trailing">${iconChevronRight(16)}</div>
+      </div>
+    `).join('');
+
+    // Tap a row to open the same edit modal used in View All
+    listEl.querySelectorAll('.fillup-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        const id = parseInt(row.dataset.id, 10);
+        import('./fillup-list.js').then((m) => m.openFillupEditModal(id, () => renderHome()));
+      });
+    });
   }
 
   // Draw dual-axis consumption+price chart (last 6 months by date)

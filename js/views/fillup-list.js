@@ -76,7 +76,10 @@ function renderList(fillups, units, currency) {
   });
 }
 
-function openFillupEditModal(fillupId) {
+// Opens the edit modal for a single fill-up. Optional onDone callback runs
+// after a successful save/delete (used when opened from the Home recent
+// list, so it can refresh itself instead of the View All list).
+export function openFillupEditModal(fillupId, onDone) {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.onclick = (e) => { if (e.target === modal) document.body.removeChild(modal); };
@@ -98,10 +101,10 @@ function openFillupEditModal(fillupId) {
   document.body.appendChild(modal);
 
   // Load fillup data into the same form as the fill-up screen
-  loadFillupEditForm(fillupId, modal);
+  loadFillupEditForm(fillupId, modal, onDone);
 }
 
-async function loadFillupEditForm(fillupId, modal) {
+async function loadFillupEditForm(fillupId, modal, onDone) {
   const fillups = await getFillups(null); // get all, then find
   const f = fillups.find((x) => x.id === fillupId);
   if (!f) {
@@ -193,12 +196,19 @@ async function loadFillupEditForm(fillupId, modal) {
   el('edit-total').addEventListener('input', updateLiters);
   updateLiters();
 
+  // After save/delete: refresh the caller's list (Home recent list passes
+  // its own callback; the View All list re-renders by default)
+  const afterClose = () => {
+    if (onDone) onDone();
+    else renderFillupList(f.vehicleId);
+  };
+
   window.deleteFillupModal = async (id) => {
     if (!confirm('Delete this fill-up? This cannot be undone.')) return;
     await deleteFillup(id);
     showToast('Fill-up deleted', 'success');
     document.body.removeChild(modal);
-    renderFillupList(f.vehicleId);
+    afterClose();
   };
 
   window.saveFillupEditModal = async (id) => {
@@ -230,7 +240,7 @@ async function loadFillupEditForm(fillupId, modal) {
       });
       showToast('Fill-up updated', 'success');
       document.body.removeChild(modal);
-      renderFillupList(f.vehicleId);
+      afterClose();
     } catch (err) {
       showToast('Failed to save', 'error');
     }
