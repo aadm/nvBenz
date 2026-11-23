@@ -18,6 +18,7 @@ Launch it here: `https://aadm.github.io/nvBenz/`
 - [Mobile usage — install on iPhone](#mobile-usage--install-on-iphone)
 - [Offline behavior & data safety](#offline-behavior--data-safety)
 - [Customizing the UI](#customizing-the-ui)
+- [TODO / future ideas](#todo--future-ideas)
 - [File structure](#file-structure)
 
 ## Features
@@ -56,16 +57,19 @@ fills accumulate their liters into the current open interval until the next full
 Chart conventions:
 - All x-axis labels use `Mon-YY` format (e.g., `Dec-26`, `Mar-24`), flat/horizontal
 - Exactly 3 x-axis tick labels (left, center, right) via explicit callback
-- Exactly 3 y-axis tick labels (bottom, center, top) via explicit `stepSize = (max-min)/2`
-- Y-axis tick labels are integers (no floats)
-- Clean axis limits: values rounded to nearest 5/10/25/50 depending on magnitude
-  (e.g., 51 → 50, 151 → 150)
-- Consumption axis: blue (`#60a5fa` dark / `#2563eb` light), fixed extent 8-22 km/l
-  with tick labels at 10, 15, 20 (2 km/l buffer above/below the tick range, applied
-  on both the home chart and the stats consumption chart)
+- Exactly 3 y-axis tick labels, integers only (no floats)
+- Consumption axis: blue (`#60a5fa` dark / `#2563eb` light), fixed scale in two modes:
+  - `km/l` mode: extent 8-22 with tick labels at 10, 15, 20 km/l
+  - `l/100km` mode: inverted axis (`reverse: true`) so better (lower) values sit
+    at the top, extent 4.5 (top) to 12.5 (bottom) — the exact conversion of the
+    km/l extent — with tick labels at 5, 7, 10 l/100km (the middle tick is
+    deliberately not at the geometric midpoint)
 - Cost axis: black/white (theme-aware), dynamic clean range with buffer
-- Price per liter: green (`#4ade80` dark / `#16a34a` light), dynamic clean range
-  (sane defaults ~1-3 €/l for typical fuel prices)
+- Price per liter: green (`#4ade80` dark / `#16a34a` light), FIXED range 1-3 €/l
+  with ticks at €1, €2, €3 — outlier values are clipped rather than allowed to
+  widen the axis
+- Avg consumption card values convert with the selected unit (km/l ⇄ l/100km)
+- Total liters on the Total costs card are rounded up to whole liters
 - Monthly bar chart y-axes: bottom tick (0) has its label hidden — only mid and top
   are displayed
 - No grid lines anywhere
@@ -170,7 +174,7 @@ gh api repos/aadm/nvBenz/pages -X PUT \
 
 The app will be available at `https://aadm.github.io/nvBenz/`.
 
-The service worker (`sw.js`) uses a versioned cache (currently `nvBenz-v16`). Bump this
+The service worker (`sw.js`) uses a versioned cache (currently `nvBenz-v21`). Bump this
 version in `sw.js` to force a cache wipe on the next launch after an update.
 
 ## Run locally on a PC (Chrome)
@@ -250,6 +254,18 @@ All user-facing text lives in the view modules under `js/views/`. Key locations:
 | Chart date format (Mon-YY) | `js/charts.js` — the `formatDateLabel()` function |
 | Colors (accent, background, text) | `css/style.css` — the `:root` and `[data-theme="light"]` CSS variables |
 | Icons | `js/icons.js` — Material Symbols SVG paths (from fonts.gstatic.com) |
+
+## TODO / future ideas
+
+- Settings option to configure the fixed price-per-liter chart range
+  (currently hardcoded 1-3 €/l in `js/charts.js` `priceChart`)
+- "Import from gist" button to restore data on a second phone (export already works)
+- GPS recording of refueling location from the fill-up form (lat/lng already
+  stored on Fuelio import, ready to use)
+- Per-vehicle default fuel type auto-selected on the fill-up form
+- Android install prompt via `beforeinstallprompt`
+- Fill-up series interpolation when a refueling was missed (Fuelio-style
+  "missed fill-up" flag support)
 
 ## File structure
 

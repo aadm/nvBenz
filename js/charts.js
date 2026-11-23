@@ -63,21 +63,26 @@ function cleanAxisRange(arr, bufferPct = 0.15) {
   return { min, max, step: (max - min) / 2 };
 }
 
-// Fixed consumption axis: extent 8-22 km/l with ticks 10/15/20 (km/l mode),
-// or the converted equivalent 4-12 l/100km with ticks 5/8/11 (l/100km mode).
-// 2 units of buffer above/below the tick range, exactly 3 tick labels.
+// Fixed consumption axis. Two modes:
+//   km/l    — extent 8-22, ticks 10/15/20, label "X km/l"
+//   l/100km — inverted axis (reverse) so lower l/100km (better) sits at the
+//             top, matching the km/l layout: extent 4.5 (top) to 12.5
+//             (bottom), ticks 5/7/10, label "X l/100km". The middle tick is
+//             deliberately NOT at the geometric midpoint.
 function consumptionAxis(mode) {
   if (mode === 'l/100km') {
     return {
-      min: 4,
-      max: 12,
-      ticks: [5, 8, 11],
+      min: 4.5,
+      max: 12.5,
+      reverse: true,
+      ticks: [5, 7, 10],
       label: (v) => Math.round(v) + ' l/100km'
     };
   }
   return {
     min: 8,
     max: 22,
+    reverse: false,
     ticks: [10, 15, 20],
     label: (v) => Math.round(v) + ' km/l'
   };
@@ -179,6 +184,7 @@ export function consumptionPriceChart(canvasId, data, mode) {
           {
             id: 'y-consumption',
             position: 'right',
+            reverse: consumptionAxis(mode).reverse,
             afterBuildTicks: makeConsumptionTicks(mode),
             ticks: {
               fontColor: consumptionColor(),
@@ -243,6 +249,7 @@ export function consumptionChart(canvasId, data, mode, opts = {}) {
           gridLines: { display: false, drawBorder: false }
         }],
         yAxes: [{
+          reverse: consumptionAxis(mode).reverse,
           afterBuildTicks: makeConsumptionTicks(mode),
           ticks: {
             fontColor: consumptionColor(),
@@ -259,7 +266,9 @@ export function consumptionChart(canvasId, data, mode, opts = {}) {
   return activeCharts[canvasId];
 }
 
-/* Stats: price per liter — green, clean range, dots for short periods */
+/* Stats: price per liter — green, FIXED range 1-3 €/l.
+   Outlier values (mis-entries, foreign-currency rows) are clipped rather
+   than allowed to widen the axis. Dots for short periods. */
 export function priceChart(canvasId, data, opts = {}) {
   destroyChart(canvasId);
   const ctx = document.getElementById(canvasId);
@@ -272,7 +281,6 @@ export function priceChart(canvasId, data, opts = {}) {
   });
 
   const showPoints = opts.showPoints || false;
-  const range = cleanAxisRange(values, 0.2);
 
   activeCharts[canvasId] = new Chart(ctx, {
     type: 'line',
@@ -314,10 +322,10 @@ export function priceChart(canvasId, data, opts = {}) {
           ticks: {
             fontColor: priceGreenColor(),
             fontSize: 11,
-            min: range.min,
-            max: range.max,
-            stepSize: range.step,
-            callback: (v) => '€' + v.toFixed(2)
+            min: 1,
+            max: 3,
+            stepSize: 1,
+            callback: (v) => '€' + v.toFixed(0)
           },
           gridLines: { display: false, drawBorder: false }
         }]

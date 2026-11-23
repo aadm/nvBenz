@@ -41,7 +41,8 @@ export function consumptionLabel(mode) {
 
 export function formatConsumption(value, mode) {
   if (!value || value === 0) return '—';
-  const v = mode === 'l/100km' ? value : value;
+  // value arrives in km/l; convert to l/100km when that mode is selected
+  const v = mode === 'l/100km' ? 100 / value : value;
   return v.toFixed(2);
 }
 

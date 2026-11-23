@@ -1,7 +1,7 @@
 // nvBenz — Stats view
 
 import { getSetting, setSetting, getActiveVehicleId, getVehicleWithMostRecentFillup, getVehicles, getFillups } from '../db.js';
-import { computeIntervals, formatConsumption, consumptionLabel, formatDistance, formatCost, formatVolume } from '../model.js';
+import { computeIntervals, formatConsumption, consumptionLabel, formatDistance, formatCost } from '../model.js';
 import { consumptionChart, priceChart, monthlyChart } from '../charts.js';
 import { iconChevronLeft, iconChart } from '../icons.js';
 import { showToast } from '../router.js';
@@ -89,9 +89,9 @@ export async function renderStats() {
         <div class="sub">${consumptionLabel(consumptionMode)} &bull; ${totalFillups} fill-ups</div>
       </div>
       <div class="card">
-        <div class="label">Total spent</div>
+        <div class="label">Total costs</div>
         <div class="value">${formatCost(totalCost, currency)}</div>
-        <div class="sub">${formatVolume(totalLiters, units)} total</div>
+        <div class="sub">${Math.ceil(totalLiters)} l total</div>
       </div>
       <div class="card">
         <div class="label">Distance</div>

@@ -65,19 +65,17 @@ export async function renderHome() {
         <div class="sub">${modeLabel} &bull; ${stats.totalFillups} fill-ups</div>
       </div>
       <div class="card">
-        <div class="label">Total cost</div>
+        <div class="label">Total costs</div>
         <div class="value">${formatCost(stats.totalCost, currency)}</div>
-        <div class="sub">${formatVolume(stats.totalLiters, units)} total</div>
+        <div class="sub">${Math.ceil(stats.totalLiters)} l total</div>
       </div>
       <div class="card">
         <div class="label">Distance</div>
         <div class="value">${formatDistance(stats.distance, units)}</div>
-        <div class="sub">cost/km ${formatCost(stats.costPerKm, currency)}</div>
       </div>
       <div class="card">
-        <div class="label">Cost / 100 km</div>
-        <div class="value">${formatCost(stats.costPer100Km, currency)}</div>
-        <div class="sub">for ${formatDistance(100, units)}</div>
+        <div class="label">Cost / km</div>
+        <div class="value">${formatCost(stats.costPerKm, currency)}</div>
       </div>
     </div>
 
