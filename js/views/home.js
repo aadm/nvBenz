@@ -131,7 +131,9 @@ export async function renderHome() {
     const fuelById = new Map(allFillups.map((f) => [String(f.id), f.fuelType || '']));
     listEl.innerHTML = recent.map((i) => {
       const date = i.endDate.slice(0, 10);
-      const kmL = i.consumption > 0 ? i.consumption.toFixed(1) : '—';
+      // formatConsumption converts km/l -> l/100km when that mode is selected
+      const consLabel = i.consumption > 0 ? formatConsumption(i.consumption, consumptionMode) : '—';
+      const trailing = consLabel === '—' ? '—' : `${consLabel} ${modeLabel}`;
       const fuels = [...new Set((i.fillupIds || []).map((id) => fuelById.get(String(id))).filter(Boolean))];
       const fuelLabel = fuels.length ? ` &bull; ${escapeHtml(fuels.join(' + '))}` : '';
       return `
@@ -140,7 +142,7 @@ export async function renderHome() {
             <div class="title">${escapeHtml(date)}</div>
             <div class="subtitle">${formatDistance(i.distance, units)} &bull; ${formatVolume(i.liters, units)} &bull; ${formatCost(i.cost, currency)}${fuelLabel}</div>
           </div>
-          <div class="trailing">${kmL} ${modeLabel}</div>
+          <div class="trailing">${trailing}</div>
         </div>
       `;
     }).join('');
