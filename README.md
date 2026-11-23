@@ -136,11 +136,26 @@ Required columns (any of these aliases work):
 | notes | `Notes`, `notes`, `note`, `Note` |
 | lat | `latitude`, `Latitude`, `lat`, `Lat` |
 | lng | `longitude`, `Longitude`, `lng`, `lon`, `Lon`, `Lng` |
+| FuelType (numeric) | `FuelType` — Fuelio's per-installation fuel type code |
 
 GPS coordinates are stored on each fill-up record for a future location-recording feature.
 
-**De-duplication**: re-importing the same CSV reuses the existing vehicle (by name) and
-skips fill-ups already present (matched by date + odometer). No duplicates are created.
+**Fuel type resolution** (most specific wins):
+1. **Notes keywords** — `hvo`, `diesel+`, `unleaded 95/98`, `lpg`, `petrol`, `benzina`
+2. **Fuelio's numeric FuelType codes** — Fuelio stores per-installation IDs, not
+   names. The mapping in `js/views/import-export.js` (`FUEL_TYPE_CODES`) was
+   inferred from this fleet: `110 → Unleaded 95`, `112 → Unleaded 98`,
+   `201/202/211/219/220 → Diesel`. Edit the table if your Fuelio used
+   different IDs.
+3. Rows resolving to nothing are labeled `Unspecified` (edit the fill-up later
+   to relabel).
+
+**De-duplication with repair**: re-importing the same CSV reuses the existing
+vehicle (by name) and matches fill-ups by date + odometer. When a matched
+record has no fuel type but the archive provides one, the stored record's
+fuel type (and GPS, if missing) is **updated in place** instead of skipped.
+Re-import your Fuelio archive once to backfill fuel types on previously
+imported rows — the summary reports how many were repaired.
 
 ## CSV format
 
@@ -324,3 +339,21 @@ nvBenz/
 ```
 
 No npm, no build step, no framework — vanilla JavaScript throughout.
+
+
+
+## Favicon
+
+Favicon (used by browsers like Chrome, Firefox etc) is the Google Material Symbols `local_gas_station` icon.
+
+## Icon Generation
+
+I started from the icon drawn for nvAppnt. Then I simply added the favicon downloaded as svg and placed it in line with the black middle stripe, stretched the fuel pump until it was roughly in line with the colored ribbon and that was it.
+
+(I also tried for several minutes to make something nicer in Gemini and Claude but the results were terrible; honestly this is what baffles me -- LLM that can produce a whole FPS game from scratch with minimal prompts, drawings and videos of pelicans and otters doing absurd things, but thn you ask for a super simple, clean icon and it all falls apart... maybe the singularity is not that close).
+
+
+![nvBenz icon](icons/icon-512.png)
+
+(aadm, November 2026)
+

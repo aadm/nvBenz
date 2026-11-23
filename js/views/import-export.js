@@ -162,6 +162,7 @@ async function handleFuelioImport(e) {
 
   let vehiclesImported = 0;
   let fillupsImported = 0;
+  let typesRepaired = 0;
 
   for (const file of files) {
     if (!file.name.endsWith('.csv')) {
@@ -172,11 +173,13 @@ async function handleFuelioImport(e) {
     const r = await importFuelioCsv(file);
     vehiclesImported += r.vehicles;
     fillupsImported += r.fillups;
+    typesRepaired += r.repaired || 0;
     importLog.push(...r.log);
   }
 
   const warningCount = importLog.filter((l) => l.level === 'warning' || l.level === 'error').length;
   let msg = `Imported ${vehiclesImported} vehicle(s) and ${fillupsImported} fill-up(s).`;
+  if (typesRepaired) msg += ` Repaired ${typesRepaired} existing fuel type(s).`;
   if (warningCount) msg += ` ${warningCount} warning(s) — tap "View full import log" for details.`;
   resultEl.textContent = msg;
   resultEl.style.color = warningCount ? 'var(--warning)' : 'var(--success)';
@@ -218,8 +221,26 @@ const VEHICLE_COLUMN_ALIASES = {
 };
 
 // Minimum columns a log table must have to be considered a valid fill-up history.
-// Fuel type is NOT required here — it's derived separately from Notes.
+// Fuel type is NOT required here — it's derived from Notes and/or the numeric
+// FuelType column.
 const REQUIRED_LOG_FIELDS = ['date', 'odo', 'liters', 'cost'];
+
+// Fuelio's numeric FuelType column codes. Fuelio assigns per-installation IDs
+// rather than storing names. This mapping was inferred from the actual fleet:
+//   110 → Peugeot 3008 Pure Tech / Moto Guzzi V7 / Volvo XC60 / CRF (all petrol)
+//   112 → Moto Guzzi V7 (premium petrol)
+//   201/202/211/219/220 → VW California BiTDi / BMW 320d (diesel family)
+// Notes-based detection (hvo, diesel+…) always takes priority over the code.
+// Edit this table if your Fuelio installation used different IDs.
+const FUEL_TYPE_CODES = {
+  110: 'Unleaded 95',
+  112: 'Unleaded 98',
+  201: 'Diesel',
+  202: 'Diesel',
+  211: 'Diesel',
+  219: 'Diesel',
+  220: 'Diesel'
+};
 
 function getField(rowObj, aliases) {
   for (const key of aliases) {
@@ -302,6 +323,7 @@ async function importFuelioCsv(file) {
 
   let vehicles = 0;
   let fillups = 0;
+  let repaired = 0;
 
   // Validate the log header actually has the columns we need, regardless of
   // whether this came from a "## Log" section or a plain CSV.
@@ -367,10 +389,12 @@ async function importFuelioCsv(file) {
     }
 
     if (logHeader && logRows.length) {
-      // Build a set of existing fill-ups for this vehicle to avoid duplicate rows
-      // on re-import (matched by date + odometer, which uniquely identifies a fill-up).
+      // Build a map of existing fill-ups for this vehicle (matched by date +
+      // odometer, which uniquely identifies a fill-up) for two purposes:
+      //   1. skip rows that were already imported
+      //   2. REPAIR existing records whose fuelType is missing/Unspecified
       const existingFillups = await getFillups(vehicleId);
-      const existingKeys = new Set(existingFillups.map((f) => f.date + '|' + f.odo));
+      const existingByKey = new Map(existingFillups.map((f) => [f.date + '|' + f.odo, f]));
 
       for (let i = 0; i < logRows.length; i++) {
         const row = logRows[i];
@@ -384,7 +408,23 @@ async function importFuelioCsv(file) {
         const notes = getField(f, COLUMN_ALIASES.notes);
         const latRaw = getField(f, COLUMN_ALIASES.lat);
         const lngRaw = getField(f, COLUMN_ALIASES.lng);
-        const fuelType = normalizeFuelType(notes) || 'Unspecified';
+
+        // Fuel type resolution, most specific first:
+        //   1. Notes keywords (hvo, diesel+, …) — always win
+        //   2. Fuelio's numeric FuelType code column
+        //   3. nvBenz's own exported fuelType name column (plain CSVs)
+        let fuelType = normalizeFuelType(notes) || 'Unspecified';
+        if (fuelType === 'Unspecified') {
+          const codeRaw = f['FuelType'];
+          if (codeRaw !== undefined && codeRaw !== '') {
+            const code = parseInt(codeRaw, 10);
+            if (!isNaN(code) && FUEL_TYPE_CODES[code]) fuelType = FUEL_TYPE_CODES[code];
+          }
+        }
+        if (fuelType === 'Unspecified') {
+          const nameRaw = f['fuelType'];
+          if (nameRaw !== undefined && nameRaw !== '') fuelType = String(nameRaw);
+        }
         const rowNum = i + 1;
 
         if (!date || !odoRaw || !litersRaw || !costRaw) {
@@ -405,8 +445,24 @@ async function importFuelioCsv(file) {
         const lng = lngRaw !== '' && !isNaN(parseFloat(lngRaw)) ? parseFloat(lngRaw) : null;
 
         const key = date + '|' + odo.toString();
-        if (existingKeys.has(key)) {
-          log.push({ level: 'info', message: `${file.name} row ${rowNum}: already imported (same date + odo) — skipped` });
+        const existing = existingByKey.get(key);
+        if (existing) {
+          // Duplicate row — but if the stored record lacks a fuel type and the
+          // archive provides one, repair it in place so re-importing the same
+          // Fuelio archive upgrades older data.
+          const existingFt = existing.fuelType || '';
+          if (fuelType !== 'Unspecified' && (!existingFt || existingFt === 'Unspecified')) {
+            await saveFillup({
+              ...existing,
+              fuelType,
+              lat: existing.lat != null ? existing.lat : lat,
+              lng: existing.lng != null ? existing.lng : lng
+            });
+            repaired++;
+            log.push({ level: 'info', message: `${file.name} row ${rowNum}: fuel type repaired → ${fuelType}` });
+          } else {
+            log.push({ level: 'info', message: `${file.name} row ${rowNum}: already imported (same date + odo) — skipped` });
+          }
           continue;
         }
 
@@ -423,13 +479,13 @@ async function importFuelioCsv(file) {
             lat,
             lng
           });
-          existingKeys.add(key);
+          existingByKey.set(key, { date, odo: odo.toString() });
           fillups++;
         } catch (err) {
           log.push({ level: 'error', message: `${file.name} row ${rowNum}: save failed — ${err.message}` });
         }
       }
-      log.push({ level: 'info', message: `${file.name}: imported ${fillups} new fill-up row(s) out of ${logRows.length} total` });
+      log.push({ level: 'info', message: `${file.name}: imported ${fillups} new fill-up row(s), repaired ${repaired} fuel type(s), out of ${logRows.length} total` });
     } else if (!logHeader) {
       log.push({ level: 'warning', message: `${file.name}: no fill-up log found in this file` });
     }
@@ -437,7 +493,7 @@ async function importFuelioCsv(file) {
     log.push({ level: 'error', message: `${file.name}: vehicle save failed — ${err.message}` });
   }
 
-  return { vehicles, fillups, log };
+  return { vehicles, fillups, repaired, log };
 }
 
 function readFileAsText(file) {
