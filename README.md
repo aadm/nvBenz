@@ -383,4 +383,3 @@ I started from the icon drawn for [nvAppnt](https://github.com/aadm/nvAppnt) in 
 ![nvBenz icon](icons/icon-512.png)
 
 (aadm, November 2026)
-
