@@ -6,7 +6,8 @@ import { idbGet, idbSet, idbDel, idbGetAll, idbClear } from '../idb.js';
 const DEFAULTS = {
   units: 'metric',            // metric | imperial
   consumptionMode: 'km/l',    // km/l | l/100km
-  currency: 'EUR',
+  currency: 'EUR',            // entry currency for the fill-up form
+  currencyFactor: 1,          // entry currency units per 1 EUR (storage is EUR)
   theme: 'dark',
   githubPat: '',
   githubGistId: '',

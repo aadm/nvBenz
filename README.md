@@ -41,7 +41,7 @@ Launch it here: `https://aadm.github.io/nvBenz/`
 - Material Symbols icons (downloaded from Google's official icon set)
 - Large fonts and >= 48px touch targets for one-handed use
 
-## Units & consumption
+## Units, consumption & currency
 
 Default is **metric** (km, liters). Two consumption display modes:
 
@@ -49,6 +49,27 @@ Default is **metric** (km, liters). Two consumption display modes:
 |------|---------|
 | km/l | Kilometers per liter (default) |
 | l/100 km | Liters per 100 km |
+
+### Currency (entry currency + EUR storage)
+
+All costs are **stored in euros** — regardless of the selected currency. The
+currency selector in Settings only controls the **fill-up entry form**: amounts
+typed there (price per liter, total paid) are shown in the selected currency and
+converted to EUR on save using the conversion factor.
+
+When a non-EUR currency is selected in Settings, an editable factor input
+appears below the selector: `1 EUR = X <currency>`. The default factor is
+fetched live from [frankfurter.app](https://frankfurter.app) (ECB reference
+rates, CORS-enabled, 3-second timeout) when online; offline it falls back to
+hardcoded sane defaults in `js/views/settings.js` (`DEFAULT_FACTORS`). The user
+can always override the factor manually — edits persist on change.
+
+Recent fill-ups and full-history lists report the fuel type of each entry
+(intervals show the union of fuel types across their fill-ups).
+
+The monthly cost & liters chart follows the selected time range: year-type
+ranges (This yr, 1 yr ago, 2 yr ago) redraw it with that window's monthly data;
+other ranges (All, This mo, Last mo) keep the last-12-months view.
 
 Consumption is computed Fuelio-style: an interval starts at a full tank. Liters consumed
 between two full tanks divided by distance traveled gives the interval consumption. Partial
@@ -65,9 +86,11 @@ Chart conventions:
     km/l extent — with tick labels at 5, 7, 10 l/100km (the middle tick is
     deliberately not at the geometric midpoint)
 - Cost axis: black/white (theme-aware), dynamic clean range with buffer
-- Price per liter: green (`#4ade80` dark / `#16a34a` light), FIXED range 1-3 €/l
-  with ticks at €1, €2, €3 — outlier values are clipped rather than allowed to
+- Price per liter: green (`#4ade80` dark / `#16a34a` light), FIXED range 1.5-2.5 €/l
+  with ticks at €1.5, €2, €2.5 — outlier values are clipped rather than allowed to
   widen the axis
+- Home chart (Consumption & costs): cost axis recomputes dynamically from the
+  displayed data with exactly 3 ticks forced at min/mid/max via afterBuildTicks
 - Avg consumption card values convert with the selected unit (km/l ⇄ l/100km)
 - Total liters on the Total costs card are rounded up to whole liters
 - Monthly bar chart y-axes: bottom tick (0) has its label hidden — only mid and top

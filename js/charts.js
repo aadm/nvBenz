@@ -106,7 +106,8 @@ function threeXCallback(value, index, values) {
 }
 
 /* Home chart: consumption (right y, fixed 8-22 with ticks 10/15/20)
-   + TOTAL COST (left y, dynamic clean range) */
+   + TOTAL COST (left y, dynamic clean range recomputed from the data,
+   exactly 3 ticks forced at min/mid/max via afterBuildTicks) */
 export function consumptionPriceChart(canvasId, data, mode) {
   destroyChart(canvasId);
   const ctx = document.getElementById(canvasId);
@@ -117,6 +118,13 @@ export function consumptionPriceChart(canvasId, data, mode) {
   const costValues = data.map((d) => d.cost);
 
   const costRange = cleanAxisRange(costValues);
+
+  // Force exactly 3 cost ticks at min / mid / max — Chart.js's own step
+  // math can yield 2 or 4 ticks when a new extreme value arrives.
+  const costTicksBuilder = function (scale) {
+    scale.ticks = [costRange.min, (costRange.min + costRange.max) / 2, costRange.max];
+    return scale.ticks;
+  };
 
   activeCharts[canvasId] = new Chart(ctx, {
     type: 'line',
@@ -171,12 +179,12 @@ export function consumptionPriceChart(canvasId, data, mode) {
           {
             id: 'y-cost',
             position: 'left',
+            afterBuildTicks: costTicksBuilder,
             ticks: {
               fontColor: costColor(),
               fontSize: 11,
               min: costRange.min,
               max: costRange.max,
-              stepSize: costRange.step,
               callback: (v) => '€' + Math.round(v)
             },
             gridLines: { display: false, drawBorder: false, drawOnChartArea: false }
@@ -266,7 +274,7 @@ export function consumptionChart(canvasId, data, mode, opts = {}) {
   return activeCharts[canvasId];
 }
 
-/* Stats: price per liter — green, FIXED range 1-3 €/l.
+/* Stats: price per liter — green, FIXED range 1.5-2.5 €/l.
    Outlier values (mis-entries, foreign-currency rows) are clipped rather
    than allowed to widen the axis. Dots for short periods. */
 export function priceChart(canvasId, data, opts = {}) {
@@ -322,10 +330,11 @@ export function priceChart(canvasId, data, opts = {}) {
           ticks: {
             fontColor: priceGreenColor(),
             fontSize: 11,
-            min: 1,
-            max: 3,
-            stepSize: 1,
-            callback: (v) => '€' + v.toFixed(0)
+            min: 1.5,
+            max: 2.5,
+            stepSize: 0.5,
+            // "€1.5", "€2", "€2.5" — strip the trailing .0 from whole numbers
+            callback: (v) => '€' + (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1))
           },
           gridLines: { display: false, drawBorder: false }
         }]

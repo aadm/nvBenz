@@ -5,6 +5,7 @@ import { initDb, getActiveVehicleId, setActiveVehicleId, getVehicleWithMostRecen
 
 window.app = {
   goHome() { navigate('home'); },
+  goMore() { navigate('more'); },
   navigate(viewName) { navigate(viewName); },
   viewFillupStats() { navigate('stats'); },
   editVehicle(id) { import('./views/vehicles.js').then((m) => m.editVehicle(id)); },

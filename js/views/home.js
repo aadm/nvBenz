@@ -79,7 +79,7 @@ export async function renderHome() {
       </div>
     </div>
 
-    <div class="section-title">Consumption &amp; price</div>
+    <div class="section-title">Consumption &amp; costs</div>
     <div class="chart-wrap" style="min-height:120px; padding:12px;">
       <canvas id="home-consumption-chart" height="100"></canvas>
     </div>
@@ -126,14 +126,19 @@ export async function renderHome() {
   if (recent.length === 0) {
     listEl.innerHTML = '<div class="list-row"><div class="main"><div class="title">No fill-ups yet</div><div class="subtitle">Log your first refueling</div></div></div>';
   } else {
+    // Map fill-up id -> fuel type so each interval can report its fuel(s)
+    const allFillups = await getFillups(activeVehicle.id);
+    const fuelById = new Map(allFillups.map((f) => [String(f.id), f.fuelType || '']));
     listEl.innerHTML = recent.map((i) => {
       const date = i.endDate.slice(0, 10);
       const kmL = i.consumption > 0 ? i.consumption.toFixed(1) : '—';
+      const fuels = [...new Set((i.fillupIds || []).map((id) => fuelById.get(String(id))).filter(Boolean))];
+      const fuelLabel = fuels.length ? ` &bull; ${escapeHtml(fuels.join(' + '))}` : '';
       return `
         <div class="list-row">
           <div class="main">
             <div class="title">${escapeHtml(date)}</div>
-            <div class="subtitle">${formatDistance(i.distance, units)} &bull; ${formatVolume(i.liters, units)} &bull; ${formatCost(i.cost, currency)}</div>
+            <div class="subtitle">${formatDistance(i.distance, units)} &bull; ${formatVolume(i.liters, units)} &bull; ${formatCost(i.cost, currency)}${fuelLabel}</div>
           </div>
           <div class="trailing">${kmL} ${modeLabel}</div>
         </div>

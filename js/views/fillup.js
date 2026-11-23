@@ -25,12 +25,14 @@ let state = {
   vehicleId: null,
   date: '',
   odo: '',
-  pricePerLiter: '',   // €/l
-  totalCost: '',       // € total paid
+  pricePerLiter: '',   // entry currency
+  totalCost: '',       // entry currency
   liters: '',          // derived
   fuelType: '',
   full: true,
-  notes: ''
+  notes: '',
+  entrySymbol: '€',    // symbol shown on the fill-up form labels
+  factor: 1            // entry currency units per 1 EUR (storage is always EUR)
 };
 
 let fuelTypes = [];
@@ -62,6 +64,13 @@ export async function renderFillup() {
     }
   }
   state.vehicleId = activeVehicle ? activeVehicle.id : null;
+
+  // Entry currency: labels on this form use the selected currency, but the
+  // stored cost is always converted to EUR via the factor from Settings.
+  const entryCurrency = await getSetting('currency', 'EUR');
+  const storedFactor = await getSetting('currencyFactor', null);
+  state.entrySymbol = entryCurrency === 'EUR' ? '€' : entryCurrency === 'USD' ? '$' : entryCurrency === 'GBP' ? '£' : entryCurrency;
+  state.factor = entryCurrency === 'EUR' ? 1 : (storedFactor && storedFactor > 0 ? storedFactor : 1);
 
   const now = new Date();
   const tzOffset = now.getTimezoneOffset() * 60000;
@@ -104,6 +113,9 @@ function render(container, ordered) {
 
   const fullChecked = state.full ? 'checked' : '';
 
+  // Entry currency symbol for the price/total labels (storage is always EUR)
+  const sym = state.entrySymbol;
+
   // Derive liters preview
   const ppl = parseDecimal(state.pricePerLiter);
   const tc = parseDecimal(state.totalCost);
@@ -136,11 +148,11 @@ function render(container, ordered) {
 
       <div class="input-pair">
         <div class="form-group half">
-          <label>Price per liter (€/l)</label>
+          <label>Price per liter (${sym}/l)</label>
           <input type="text" id="fu-ppl" class="big-input placeholder-muted" value="${escapeHtml(state.pricePerLiter)}" placeholder="0.00" inputmode="decimal" autocomplete="off">
         </div>
         <div class="form-group half">
-          <label>Total paid (€)</label>
+          <label>Total paid (${sym})</label>
           <input type="text" id="fu-total" class="big-input placeholder-muted" value="${escapeHtml(state.totalCost)}" placeholder="0.00" inputmode="decimal" autocomplete="off">
         </div>
       </div>
@@ -217,13 +229,15 @@ export async function saveFillup() {
   }
 
   const liters = (totalCost / ppl).toFixed(2);
+  // Convert the entered total to EUR for storage (factor = entry units per 1 EUR)
+  const costEur = state.factor > 0 ? totalCost / state.factor : totalCost;
 
   const fillup = {
     vehicleId: state.vehicleId,
     date: state.date || new Date().toISOString().slice(0, 16),
     odo: odo.toString(),
     liters: liters,
-    cost: totalCost.toString(),
+    cost: costEur.toFixed(2),
     full: state.full,
     fuelType: state.fuelType || 'Unspecified',
     notes: state.notes || ''

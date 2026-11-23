@@ -17,7 +17,7 @@ export async function renderImportExport() {
 
   container.innerHTML = `
     <div class="header" style="position:static; border-bottom:none; margin-bottom:20px; padding-top:0;">
-      <button class="back-btn" onclick="app.goHome()">${iconChevronLeft(24)}</button>
+      <button class="back-btn" onclick="app.goMore()">${iconChevronLeft(24)}</button>
       <h1>Import / Export</h1>
     </div>
 

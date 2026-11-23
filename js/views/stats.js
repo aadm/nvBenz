@@ -113,7 +113,7 @@ export async function renderStats() {
       <canvas id="chart-price" height="140"></canvas>
     </div>
 
-    <div class="section-title">Monthly cost &amp; liters (full year)</div>
+    <div class="section-title">Monthly cost &amp; liters</div>
     <div class="chart-wrap" style="min-height:180px; padding:12px;">
       <canvas id="chart-monthly" height="160"></canvas>
     </div>
@@ -141,7 +141,10 @@ export async function renderStats() {
 
       c.consumptionChart('chart-consumption', chartData, consumptionMode, { showPoints: isShortPeriod });
       c.priceChart('chart-price', chartData, { showPoints: isShortPeriod });
-      c.monthlyChart('chart-monthly', allMonthly);
+      // Monthly chart follows year-type ranges; stays on the last 12 months
+      // for non-yearly selections (All, This mo, Last mo)
+      const monthlyData = ['year', '1year', '2years'].includes(selectedRange) ? monthly : allMonthly;
+      c.monthlyChart('chart-monthly', monthlyData);
     });
   }, 50);
 }

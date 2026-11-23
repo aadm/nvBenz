@@ -50,7 +50,7 @@ function renderList(fillups, units, currency) {
       <div class="list-row fillup-row" data-id="${f.id}">
         <div class="main">
           <div class="title">${escapeHtml(date)}</div>
-          <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)} ${f.full ? '• Full' : '• Partial'}</div>
+          <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)} &bull; ${f.full ? 'Full' : 'Partial'}${f.fuelType ? ' &bull; ' + escapeHtml(f.fuelType) : ''}</div>
         </div>
         <div class="trailing">${iconChevronRight(16)}</div>
       </div>
