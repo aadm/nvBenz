@@ -163,6 +163,7 @@ async function handleFuelioImport(e) {
   let vehiclesImported = 0;
   let fillupsImported = 0;
   let typesRepaired = 0;
+  let typesFilled = 0;
 
   for (const file of files) {
     if (!file.name.endsWith('.csv')) {
@@ -174,12 +175,14 @@ async function handleFuelioImport(e) {
     vehiclesImported += r.vehicles;
     fillupsImported += r.fillups;
     typesRepaired += r.repaired || 0;
+    typesFilled += r.filled || 0;
     importLog.push(...r.log);
   }
 
   const warningCount = importLog.filter((l) => l.level === 'warning' || l.level === 'error').length;
   let msg = `Imported ${vehiclesImported} vehicle(s) and ${fillupsImported} fill-up(s).`;
   if (typesRepaired) msg += ` Repaired ${typesRepaired} existing fuel type(s).`;
+  if (typesFilled) msg += ` Filled ${typesFilled} unspecified row(s) with each vehicle's most frequent type.`;
   if (warningCount) msg += ` ${warningCount} warning(s) — tap "View full import log" for details.`;
   resultEl.textContent = msg;
   resultEl.style.color = warningCount ? 'var(--warning)' : 'var(--success)';
@@ -230,14 +233,18 @@ const REQUIRED_LOG_FIELDS = ['date', 'odo', 'liters', 'cost'];
 // provided by the user from their Fuelio setup:
 //   110 = Unleaded 95, 112 = Unleaded 98, 201 = Diesel,
 //   202 = Diesel+,     220 = HVO
-// Codes present in the CSV but NOT listed here (e.g. 211, 219) fall back
-// to Notes keyword detection. Edit this table if your IDs differ.
+// Note: Fuelio ID 211 is "Biodiesel" in the original app — for import
+// purposes it is approximated as HVO (same intended use in this fleet;
+// not strictly equivalent fuel chemistry, see README).
+// Codes present in the CSV but NOT listed here fall back to Notes keyword
+// detection. Edit this table if your IDs differ.
 const FUEL_TYPE_CODES = {
   110: 'Unleaded 95',
   112: 'Unleaded 98',
   201: 'Diesel',
   202: 'Diesel+',
-  220: 'HVO'
+  220: 'HVO',
+  211: 'HVO'
 };
 
 function getField(rowObj, aliases) {
@@ -322,6 +329,7 @@ async function importFuelioCsv(file) {
   let vehicles = 0;
   let fillups = 0;
   let repaired = 0;
+  let filled = 0;
 
   // Validate the log header actually has the columns we need, regardless of
   // whether this came from a "## Log" section or a plain CSV.
@@ -489,6 +497,37 @@ async function importFuelioCsv(file) {
         }
       }
       log.push({ level: 'info', message: `${file.name}: imported ${fillups} new fill-up row(s), repaired ${repaired} fuel type(s), out of ${logRows.length} total` });
+
+      // ---- Second pass: vehicle majority fuel type ----
+      // Rows that resolved to nothing (no code, no notes) are labeled
+      // Unspecified. Fill them with the vehicle's most frequent resolved
+      // type so the archive lands fully typed. Applies to both just-imported
+      // and pre-existing Unspecified rows for this vehicle; idempotent on
+      // re-import because filled rows are no longer Unspecified.
+      const allFillupsNow = await getFillups(vehicleId);
+      const typeCounts = {};
+      for (const fu of allFillupsNow) {
+        const t = fu.fuelType || 'Unspecified';
+        if (t !== 'Unspecified') typeCounts[t] = (typeCounts[t] || 0) + 1;
+      }
+      let majority = null;
+      let bestCount = 0;
+      for (const [t, c] of Object.entries(typeCounts)) {
+        if (c > bestCount) { bestCount = c; majority = t; }
+      }
+      if (majority) {
+        let filledCount = 0;
+        for (const fu of allFillupsNow) {
+          if (!fu.fuelType || fu.fuelType === 'Unspecified') {
+            await saveFillup({ ...fu, fuelType: majority });
+            filledCount++;
+          }
+        }
+        if (filledCount > 0) {
+          filled += filledCount;
+          log.push({ level: 'info', message: `${file.name}: second pass — ${filledCount} Unspecified row(s) set to "${majority}" (most frequent type for this vehicle)` });
+        }
+      }
     } else if (!logHeader) {
       log.push({ level: 'warning', message: `${file.name}: no fill-up log found in this file` });
     }
@@ -496,7 +535,7 @@ async function importFuelioCsv(file) {
     log.push({ level: 'error', message: `${file.name}: vehicle save failed — ${err.message}` });
   }
 
-  return { vehicles, fillups, repaired, log };
+  return { vehicles, fillups, repaired, filled, log };
 }
 
 function readFileAsText(file) {

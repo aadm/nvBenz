@@ -1,13 +1,14 @@
 # nvBenz
 
-Personal fuel tracker — vehicles, fill-ups, consumption and costs. Built to replace Fuelio
-without being tied to a commercial app. Offline-first: the entire database lives on your
-device (IndexedDB). Installable as a PWA on iPhone and any smartphone.
+Personal fuel tracker — vehicles, fill-ups, consumption and costs.
 
-Launch it here: ``
+Built to replace Fuelio and the ever ending enshittification of apps (subscription, useless features, etc).
 
-Launch it here: [https://aadm.github.io/nvAppnt/](https://aadm.github.io/nvAppnt/)
+Offline-first: the entire database lives on your device (IndexedDB). Installable as a PWA on iPhone and any smartphone.
 
+Launch it here: [https://aadm.github.io/nvBenz](https://aadm.github.io/nvBenz/)
+
+Oh the name? nv-what? Similarly to what I wrote for [my other app](https://github.com/aadm/nvAppnt) that I made following similar urges: "Inspired by [nvAlt](https://en.wikipedia.org/wiki/Notational_Velocity) and the lack of open-source alternatives".
 
 ## Table of Contents
 
@@ -150,13 +151,26 @@ which the app itself recorded:
 
 1. **Numeric FuelType code** (priority) — when present, non-zero, and mapped.
    The user's Fuelio IDs: `110 → Unleaded 95`, `112 → Unleaded 98`,
-   `201 → Diesel`, `202 → Diesel+`, `220 → HVO` (table:
+   `201 → Diesel`, `202 → Diesel+`, `220 → HVO`, `211 → HVO`.
+   Note on `211`: in the original Fuelio app this ID is **Biodiesel**; for
+   import purposes it is approximated as **HVO** — the same usage intent in
+   this fleet, though not strictly equivalent fuel chemistry (table:
    `FUEL_TYPE_CODES` in `js/views/import-export.js` — edit if your IDs
-   differ). Codes not in the table (e.g. `211`, `219`) fall through to
-   Notes detection.
+   differ). Codes not in the table (e.g. `219`) fall through to Notes
+   detection.
 2. **Notes keywords** (fallback) — `hvo`, `diesel+`, `unleaded 95/98`,
    `lpg`, `petrol`, `benzina`.
-3. Neither resolves → `Unspecified` (edit the fill-up later to relabel).
+3. Neither resolves → `Unspecified`, then the second pass below applies.
+
+**Second pass — vehicle majority type**: after all rows of a vehicle are
+processed, the import counts every resolved (non-Unspecified) type and fills
+that vehicle's remaining Unspecified rows — both just-imported and
+pre-existing — with the most frequent one. The VW's 133 legacy rows become
+Diesel, the Volvo's 46 become Unleaded 95, etc. Vehicles with no resolved
+types at all (no codes, no notes) are left Unspecified. The pass is
+idempotent: filled rows are no longer Unspecified, so re-importing changes
+nothing. The import log lists the fill count per vehicle and the summary
+reports the total.
 
 **De-duplication with repair**: re-importing the same CSV reuses the existing
 vehicle (by name) and matches fill-ups by date + odometer. When the archive
@@ -304,12 +318,9 @@ All user-facing text lives in the view modules under `js/views/`. Key locations:
 
 ## TODO / future ideas
 
-- Per-vehicle preferred fuel type, inferred at import time: after all rows are
-  processed, take the majority resolved type per vehicle and (a) store it as
-  the vehicle's `preferredFuelType` (shown/editable in the vehicle form and
-  pre-selected on the fill-up screen) and optionally (b) apply it to that
-  vehicle's remaining Unspecified rows. Implement as a second pass at the end
-  of `importFuelioCsv` — the counts are already available in the row loop
+- Store the per-vehicle majority fuel type as a `preferredFuelType` field
+  (computed during the import second pass) and pre-select it on the
+  fill-up form + show/edit it in the vehicle form
 - Settings option to configure the fixed price-per-liter chart range
   (currently hardcoded 1.5-2.5 €/l in `js/charts.js` `priceChart`)
 - "Import from gist" button to restore data on a second phone (export already works)
