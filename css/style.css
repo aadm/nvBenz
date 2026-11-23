@@ -69,13 +69,14 @@ input[type="submit"] {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Header — solid background in both themes (no gradient/blur band) */
+/* Header — transparent so it blends into the page background in both
+   themes (no lighter rectangle band at the top of the screen) */
 .header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: none;
   padding: 12px 16px;
   padding-top: max(12px, var(--safe-top));
   display: flex;
