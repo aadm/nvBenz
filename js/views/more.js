@@ -22,7 +22,7 @@ export async function renderMore() {
       <div class="list-row" onclick="app.showSettings()">
         <div class="main">
           <div class="title">Settings</div>
-          <div class="subtitle">Units, consumption, currency, theme, GitHub gist export</div>
+          <div class="subtitle">Units, theme, GitHub gist export</div>
         </div>
         <div class="trailing">${iconChevronRight(18)}</div>
       </div>
@@ -34,7 +34,7 @@ export async function renderMore() {
       Export to GitHub gist for manual backup between devices.
     </p>
     <p style="font-size:13px; color:var(--text-secondary); margin-top:8px">
-      Built in Vanilla JS, IndexedDB and Chart.js using different LLMs in OpenCode by aadm, 21-22 November 2026. Open source, no server, no tracking.
+      Built in Vanilla JS, IndexedDB and Chart.js; coded by aadm  21-23 November 2026 using OpenCode with Nemotron 3.5, Claude Sonnet 5, GLM 5.3; open source, no server, no tracking.
     </p>
   `;
 }

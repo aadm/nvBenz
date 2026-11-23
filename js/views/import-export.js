@@ -32,13 +32,11 @@ export async function renderImportExport() {
     <p style="font-size:14px; color:var(--text-secondary); margin-bottom:12px">
       Select the extracted <code>vehicle-*-local.csv</code> files from your Fuelio <code>.fuelio</code> zip —
       or any plain CSV with a fill-up log (date, odometer, liters, cost columns).<br>
-      <span style="font-size:12px; opacity:0.7">Do not select the .fuelio/.zip file itself — extract the CSVs first.</span>
     </p>
     <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-tertiary); border-radius:var(--radius-sm); padding:10px 12px;">
-      <b>Fuelio files:</b> only the <code>## Vehicle</code> section (name) and <code>## Log</code> section (fill-ups) are
-      imported; all other sections (Costs, TripLog, FavStations, Pictures, ...) are ignored.<br>
+      <b>Fuelio files:</b> only the <code>## Vehicle</code> section (name) and <code>## Log</code> section (fill-ups) are imported.<br>
       <b>Plain CSV:</b> needs at least Date, Odo/Odometer, Fuel/Liters, Price/Cost columns. GPS latitude/longitude
-      columns are preserved if present (for a future ride-recording feature).
+      columns are preserved if present.
     </p>
     <input type="file" id="fuelio-file" accept=".csv" multiple class="file-input">
     <div id="import-result" style="margin-top:12px; min-height:44px; font-size:14px;"></div>
@@ -200,23 +198,23 @@ const KNOWN_SECTIONS = new Set([
 // still imports correctly, as long as it has *some* recognizable date/odo/liters/cost
 // columns.
 const COLUMN_ALIASES = {
-  date:     ['Date', 'date'],
-  odo:      ['Odo (km)', 'Odo', 'odo', 'odometer', 'Odometer'],
-  liters:   ['Fuel (l)', 'Fuel', 'liters', 'Liters', 'litres', 'Litres'],
-  cost:     ['Price', 'price', 'cost', 'Cost', 'total', 'Total'],
-  full:     ['Full', 'full'],
-  notes:    ['Notes', 'notes', 'note', 'Note'],
-  lat:      ['latitude', 'Latitude', 'lat', 'Lat'],
-  lng:      ['longitude', 'Longitude', 'lng', 'lon', 'Lon', 'Lng']
+  date: ['Date', 'date'],
+  odo: ['Odo (km)', 'Odo', 'odo', 'odometer', 'Odometer'],
+  liters: ['Fuel (l)', 'Fuel', 'liters', 'Liters', 'litres', 'Litres'],
+  cost: ['Price', 'price', 'cost', 'Cost', 'total', 'Total'],
+  full: ['Full', 'full'],
+  notes: ['Notes', 'notes', 'note', 'Note'],
+  lat: ['latitude', 'Latitude', 'lat', 'Lat'],
+  lng: ['longitude', 'Longitude', 'lng', 'lon', 'Lon', 'Lng']
 };
 
 const VEHICLE_COLUMN_ALIASES = {
-  name:  ['Name', 'name'],
-  make:  ['Make', 'make'],
+  name: ['Name', 'name'],
+  make: ['Make', 'make'],
   model: ['Model', 'model'],
-  year:  ['Year', 'year'],
+  year: ['Year', 'year'],
   plate: ['Plate', 'plate'],
-  tank:  ['Tank1Capacity', 'tankCapacity', 'TankCapacity']
+  tank: ['Tank1Capacity', 'tankCapacity', 'TankCapacity']
 };
 
 // Minimum columns a log table must have to be considered a valid fill-up history.
