@@ -472,7 +472,8 @@ async function importFuelioCsv(file) {
             date,
             odo: odo.toString(),
             liters: liters.toString(),
-            cost: cost.toString(),
+            // Round on import — Fuelio sources carry float noise like 119.00999999999999
+            cost: cost.toFixed(2),
             full,
             fuelType,
             notes,

@@ -1,9 +1,20 @@
 // nvBenz — Fill-up list view (full history with edit)
 
-import { getFillups, getVehicles, getSetting, saveFillup as saveFillupDb, deleteFillup } from '../db.js';
+import { getFillups, getVehicles, getSetting, getFuelTypes, saveFillup as saveFillupDb, deleteFillup } from '../db.js';
 import { formatDistance, formatVolume, formatCost } from '../model.js';
 import { iconChevronLeft, iconPencil, iconChevronRight } from '../icons.js';
 import { navigate, showToast } from '../router.js';
+
+// Same ordering as the fill-up screen: diesel variants first, then petrol
+function fuelPriority(name) {
+  const n = (name || '').toLowerCase();
+  if (n === 'diesel') return 0;
+  if (n === 'diesel+') return 1;
+  if (n === 'hvo') return 2;
+  if (n === 'unleaded 95') return 3;
+  if (n === 'unleaded 98') return 4;
+  return 99;
+}
 
 export async function renderFillupList(vehicleId) {
   // Note: view visibility is handled by the caller (home.js directly shows #view-more)
@@ -112,6 +123,28 @@ async function loadFillupEditForm(fillupId, modal) {
     if (dateStr.includes('T')) return dateStr.slice(0, 16);
     return dateStr.slice(0, 10) + 'T00:00';
   };
+
+  // Fuel type dropdown: catalogue ordered, current value always selectable
+  const fuelTypes = await getFuelTypes();
+  const ordered = [...fuelTypes].sort((a, b) => {
+    const pa = fuelPriority(a.name);
+    const pb = fuelPriority(b.name);
+    if (pa !== pb) return pa - pb;
+    return a.name.localeCompare(b.name);
+  });
+  const currentFuel = f.fuelType || 'Unspecified';
+  let fuelSelect = '<select id="edit-fuel-type">';
+  if (!ordered.some((ft) => ft.name === currentFuel) && currentFuel !== 'Unspecified') {
+    fuelSelect += `<option value="${escapeHtml(currentFuel)}" selected>${escapeHtml(currentFuel)}</option>`;
+  }
+  for (const ft of ordered) {
+    fuelSelect += `<option value="${escapeHtml(ft.name)}" ${ft.name === currentFuel ? 'selected' : ''}>${escapeHtml(ft.name)}</option>`;
+  }
+  if (!ordered.some((ft) => ft.name === 'Unspecified')) {
+    fuelSelect += `<option value="Unspecified" ${currentFuel === 'Unspecified' ? 'selected' : ''}>Unspecified</option>`;
+  }
+  fuelSelect += '</select>';
+
   contentEl.innerHTML = `
     <div class="form-group">
       <label>Date &amp; time</label>
@@ -122,12 +155,16 @@ async function loadFillupEditForm(fillupId, modal) {
       <input type="text" id="edit-odo" class="big-input" value="${escapeHtml(f.odo)}" placeholder="0" inputmode="decimal" autocomplete="off">
     </div>
     <div class="form-group">
+      <label>Fuel type</label>
+      ${fuelSelect}
+    </div>
+    <div class="form-group">
       <label>Price per liter (€/l)</label>
       <input type="text" id="edit-ppl" class="big-input placeholder-muted" value="${escapeHtml((parseFloat(f.cost) / parseFloat(f.liters || 1)).toFixed(2))}" placeholder="0.00" inputmode="decimal" autocomplete="off">
     </div>
     <div class="form-group">
       <label>Total paid (€)</label>
-      <input type="text" id="edit-total" class="big-input placeholder-muted" value="${escapeHtml(f.cost)}" placeholder="0.00" inputmode="decimal" autocomplete="off">
+      <input type="text" id="edit-total" class="big-input placeholder-muted" value="${escapeHtml(parseFloat(f.cost).toFixed(2))}" placeholder="0.00" inputmode="decimal" autocomplete="off">
     </div>
     <div class="form-group">
       <label>Liters (calculated)</label>
@@ -181,12 +218,14 @@ async function loadFillupEditForm(fillupId, modal) {
         vehicleId: f.vehicleId,
         lat: f.lat,
         lng: f.lng,
-        fuelType: f.fuelType,
         date: el('edit-date').value,
         odo: odo.toString(),
         liters,
-        cost: totalCost.toString(),
+        // Store clean 2-decimal values — Fuelio sources carry float noise
+        // like 119.00999999999999
+        cost: totalCost.toFixed(2),
         full: el('edit-full').checked,
+        fuelType: el('edit-fuel-type').value || 'Unspecified',
         notes: el('edit-notes').value || ''
       });
       showToast('Fill-up updated', 'success');
