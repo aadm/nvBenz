@@ -367,7 +367,6 @@ input[type="submit"] {
 /* Odometer reading on the fill-up row title line (next to the date) */
 .row-odo {
   font-weight: 700;
-  margin-left: 6px;
   color: var(--text);
 }
 
