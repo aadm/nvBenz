@@ -212,6 +212,23 @@ In **Settings → GitHub export (gist)**:
    `nvBenz-export.json` (vehicles, fuel types, fill-ups, exported at timestamp).
 4. Re-exporting updates the same gist (the Gist ID is remembered).
 
+## JSON import (backup restore / version upgrades)
+
+**More → Import / Export → Import JSON archive** restores a
+`nvBenz-export.json` file — the path for moving to a new phone or
+recovering data after a version upgrade:
+
+1. Vehicles are matched **by name** — existing ones are reused, new ones
+   created (with fresh ids; `defaultFuelTypeId` references are translated)
+2. Fuel types are matched **by name** the same way
+3. Fill-ups are attached to the mapped vehicle and matched **by date +
+   odometer** — duplicates are skipped, so re-importing the same archive
+   changes nothing
+
+JSON is the recommended backup format: it is lossless (vehicles with all
+metadata, fuel types, fill-ups with GPS) and round-trips between versions.
+Use the CSV export for spreadsheet interchange, not for restores.
+
 ## Setup — GitHub Pages
 
 nvBenz is a static site with no build step. Host it on GitHub Pages (free) and install it

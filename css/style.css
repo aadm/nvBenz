@@ -364,6 +364,13 @@ input[type="submit"] {
   white-space: nowrap;
 }
 
+/* Odometer reading on the fill-up row title line (next to the date) */
+.row-odo {
+  font-weight: 700;
+  margin-left: 6px;
+  color: var(--text);
+}
+
 /* Vehicle row (with stats + edit action icons) */
 .vehicle-row { align-items: center; gap: 4px; cursor: default; }
 .vehicle-row.is-active { background: rgba(59, 130, 246, 0.08); }

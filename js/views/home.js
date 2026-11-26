@@ -132,7 +132,7 @@ export async function renderHome() {
     listEl.innerHTML = recent.map((f) => `
       <div class="list-row fillup-row" data-id="${f.id}">
         <div class="main">
-          <div class="title">${escapeHtml(f.date.slice(0, 10).replace(/-/g, '/'))}</div>
+          <div class="title">${escapeHtml(f.date.slice(0, 10).replace(/-/g, '/'))} <span class="row-odo">${escapeHtml(f.odo)} km</span></div>
           <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)} &bull; ${f.full ? 'Full' : 'Partial'}${f.fuelType ? ' &bull; ' + escapeHtml(f.fuelType) : ''}</div>
         </div>
         <div class="trailing">${iconChevronRight(16)}</div>

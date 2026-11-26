@@ -43,6 +43,16 @@ export async function renderImportExport() {
     <div id="import-result" style="margin-top:12px; min-height:44px; font-size:14px;"></div>
     <button class="btn-secondary" id="btn-view-log" style="width:100%; margin-top:8px; display:none;">View full import log</button>
 
+    <div class="section-title" style="margin-top:28px">Import JSON archive (backup restore)</div>
+    <p style="font-size:14px; color:var(--text-secondary); margin-bottom:12px">
+      Select a <code>nvBenz-export.json</code> file to restore a full archive —
+      e.g. after upgrading nvBenz or when moving to a new phone.<br>
+      <span style="font-size:12px; opacity:0.7">Vehicles, fuel types and fill-ups are matched against existing data by name
+      and date+odometer — nothing is duplicated, so re-importing is safe.</span>
+    </p>
+    <input type="file" id="json-import-file" accept=".json" class="file-input">
+    <div id="json-import-result" style="margin-top:12px; min-height:30px; font-size:14px;"></div>
+
     <div class="section-title" style="margin-top:28px">Danger zone</div>
     <button class="btn-danger" id="btn-reset" style="width:100%">Reset all local data</button>
   `;
@@ -50,6 +60,7 @@ export async function renderImportExport() {
   document.getElementById('btn-export-csv').addEventListener('click', exportCsv);
   document.getElementById('btn-export-json').addEventListener('click', exportJson);
   document.getElementById('fuelio-file').addEventListener('change', handleFuelioImport);
+  document.getElementById('json-import-file').addEventListener('change', handleJsonImportEvent);
   document.getElementById('btn-reset').addEventListener('click', resetData);
   document.getElementById('btn-view-log').addEventListener('click', showImportLogModal);
 
@@ -197,6 +208,119 @@ async function handleFuelioImport(e) {
   logBtn.style.display = importLog.length ? 'block' : 'none';
 
   e.target.value = '';
+}
+
+// ---------- JSON archive import (backup restore / version upgrade) ----------
+
+// Expected archive shape (from exportJson):
+//   { exportedAt, vehicles: [...], fuelTypes: [...], fillups: [...] }
+// Vehicles and fuel types are matched by name (no duplicates created);
+// fill-ups are attached to the mapped vehicle and matched by date + odometer
+// so re-importing the same archive is a no-op. Old ids are NOT carried over —
+// IndexedDB assigns fresh keys and all references are translated via maps.
+async function handleJsonImportEvent(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const resultEl = document.getElementById('json-import-result');
+  resultEl.style.color = 'var(--text-secondary)';
+  resultEl.textContent = 'Reading archive...';
+
+  try {
+    const text = await readFileAsText(file);
+    const data = JSON.parse(text);
+    if (!data || !Array.isArray(data.vehicles) || !Array.isArray(data.fillups)) {
+      throw new Error('not a nvBenz archive (missing vehicles/fill-ups arrays)');
+    }
+    const summary = await importJsonArchive(data);
+    resultEl.textContent =
+      `JSON import: ${summary.vehiclesNew} new vehicle(s), ` +
+      `${summary.fillupsImported} fill-up(s) imported, ` +
+      `${summary.fillupsSkipped} duplicate/unknown skipped.`;
+    resultEl.style.color = 'var(--success)';
+    showToast('JSON archive imported', 'success');
+  } catch (err) {
+    console.error('nvBenz: JSON import failed', err);
+    resultEl.textContent = 'JSON import failed: ' + err.message;
+    resultEl.style.color = 'var(--danger)';
+    showToast('JSON import failed', 'error');
+  }
+  e.target.value = '';
+}
+
+async function importJsonArchive(data) {
+  // --- Fuel types first: dedup by name, build old id -> new id map ---
+  // (needed before vehicles, to translate each vehicle's defaultFuelTypeId)
+  const existingFuelTypes = await getFuelTypes();
+  const fuelTypeIdMap = new Map();
+  for (const ft of (data.fuelTypes || [])) {
+    const existing = existingFuelTypes.find((eft) => eft.name === ft.name);
+    if (existing) {
+      fuelTypeIdMap.set(String(ft.id), existing.id);
+    } else {
+      const { id, ...ftRest } = ft;
+      const newId = await saveFuelType(ftRest);
+      fuelTypeIdMap.set(String(ft.id), newId);
+    }
+  }
+
+  // --- Vehicles: dedup by name, strip old ids, remap defaultFuelTypeId ---
+  const existingVehicles = await getVehicles();
+  const vehicleIdMap = new Map();
+  let vehiclesNew = 0;
+  for (const v of data.vehicles) {
+    const existing = existingVehicles.find((ev) => ev.name === v.name);
+    if (existing) {
+      vehicleIdMap.set(String(v.id), existing.id);
+    } else {
+      const { id, defaultFuelTypeId, ...vRest } = v;
+      vRest.defaultFuelTypeId = defaultFuelTypeId != null
+        ? (fuelTypeIdMap.get(String(defaultFuelTypeId)) ?? null)
+        : null;
+      const newId = await saveVehicle(vRest);
+      vehicleIdMap.set(String(v.id), newId);
+      vehiclesNew++;
+    }
+  }
+
+  // --- Fill-ups: translate vehicleId, dedup by vehicle + date + odo ---
+  // Pre-fetch existing keys per target vehicle once (avoid O(n^2) reads).
+  const existingKeysByVehicle = new Map();
+  for (const newVid of new Set(vehicleIdMap.values())) {
+    const fus = await getFillups(newVid);
+    existingKeysByVehicle.set(String(newVid), new Set(fus.map((x) => x.date + '|' + x.odo)));
+  }
+
+  let fillupsImported = 0;
+  let fillupsSkipped = 0;
+  for (const f of data.fillups) {
+    const newVehicleId = vehicleIdMap.get(String(f.vehicleId));
+    if (newVehicleId === undefined) {
+      fillupsSkipped++; // archive row references a vehicle missing from the archive
+      continue;
+    }
+    const keys = existingKeysByVehicle.get(String(newVehicleId));
+    const key = f.date + '|' + f.odo;
+    if (keys.has(key)) {
+      fillupsSkipped++;
+      continue;
+    }
+    await saveFillup({
+      vehicleId: newVehicleId,
+      date: f.date,
+      odo: f.odo,
+      liters: f.liters,
+      cost: f.cost,
+      full: f.full,
+      fuelType: f.fuelType || 'Unspecified',
+      notes: f.notes || '',
+      lat: f.lat != null ? f.lat : null,
+      lng: f.lng != null ? f.lng : null
+    });
+    keys.add(key);
+    fillupsImported++;
+  }
+
+  return { vehiclesNew, fillupsImported, fillupsSkipped };
 }
 
 // Known Fuelio section headers other than Vehicle/Log that must NOT be treated as vehicle or log data
