@@ -138,6 +138,19 @@ export function computeIntervals(fillups) {
 
 // ---------- Stats ----------
 
+// Map closing fill-up id -> the interval that ended at it (Fuelio-style).
+// Only full tanks close intervals; used by the fill-up lists to show the
+// avg consumption on each full fill's row. Partial rows get no entry.
+export function closingIntervals(fillups) {
+  const intervals = computeIntervals(fillups);
+  const map = new Map();
+  for (const iv of intervals) {
+    const ids = iv.fillupIds || [];
+    if (ids.length) map.set(String(ids[ids.length - 1]), iv);
+  }
+  return map;
+}
+
 export async function getStats(vehicleId = null) {
   const fillups = await getFillups(vehicleId);
   const vehicles = await getVehicles();

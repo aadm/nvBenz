@@ -1,7 +1,7 @@
 // nvBenz — Home view
 
 import { getVehicles, getFillups, getSetting, setSetting, setActiveVehicleId, getVehicleWithMostRecentFillup } from '../db.js';
-import { getStats, formatConsumption, consumptionLabel, formatDistance, formatVolume, formatCost } from '../model.js';
+import { getStats, formatConsumption, consumptionLabel, formatDistance, formatVolume, formatCost, closingIntervals } from '../model.js';
 import { iconForKind, iconChevronRight, iconCheck, iconDarkMode, iconLightMode } from '../icons.js';
 
 let statsChart = null;
@@ -125,6 +125,16 @@ export async function renderHome() {
   const allFillups = await getFillups(activeVehicle.id);
   const sortedFillups = [...allFillups].sort((a, b) => new Date(b.date) - new Date(a.date));
   const recent = sortedFillups.slice(0, 5);
+  // Full tanks close an interval and carry its avg consumption; partials
+  // accumulate into the open interval and show nothing until then.
+  const intervalByClosingId = closingIntervals(allFillups);
+  const consLabelFor = (f) => {
+    const isFull = f.full === true || f.full === 1 || f.full === '1';
+    if (!isFull) return '';
+    const iv = intervalByClosingId.get(String(f.id));
+    if (!iv || !(iv.consumption > 0)) return '';
+    return ` &bull; ${formatConsumption(iv.consumption, consumptionMode)} ${modeLabel}`;
+  };
   const listEl = document.getElementById('home-recent-list');
   if (recent.length === 0) {
     listEl.innerHTML = '<div class="list-row"><div class="main"><div class="title">No fill-ups yet</div><div class="subtitle">Log your first refueling</div></div></div>';
@@ -132,8 +142,8 @@ export async function renderHome() {
     listEl.innerHTML = recent.map((f) => `
       <div class="list-row fillup-row" data-id="${f.id}">
         <div class="main">
-          <div class="title">${escapeHtml(f.date.slice(0, 10).replace(/-/g, '/'))} <span class="row-odo">${escapeHtml(f.odo)} km</span></div>
-          <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)} &bull; ${f.full ? 'Full' : 'Partial'}${f.fuelType ? ' &bull; ' + escapeHtml(f.fuelType) : ''}</div>
+          <div class="title">${escapeHtml(f.date.slice(0, 10).replace(/-/g, '/'))} &bull; <span class="row-odo">${escapeHtml(f.odo)} km</span></div>
+          <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)}${consLabelFor(f)} &bull; ${f.full ? 'Full' : 'Partial'}${f.fuelType ? ' &bull; ' + escapeHtml(f.fuelType) : ''}</div>
         </div>
         <div class="trailing">${iconChevronRight(16)}</div>
       </div>

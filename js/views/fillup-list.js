@@ -1,7 +1,7 @@
 // nvBenz — Fill-up list view (full history with edit)
 
 import { getFillups, getVehicles, getSetting, getFuelTypes, saveFillup as saveFillupDb, deleteFillup } from '../db.js';
-import { formatDistance, formatVolume, formatCost } from '../model.js';
+import { formatDistance, formatVolume, formatCost, formatConsumption, closingIntervals } from '../model.js';
 import { iconChevronLeft, iconPencil, iconChevronRight } from '../icons.js';
 import { navigate, showToast } from '../router.js';
 
@@ -23,6 +23,7 @@ export async function renderFillupList(vehicleId) {
   const activeVehicle = vehicles.find((v) => String(v.id) === String(vehicleId));
   const units = await getSetting('units', 'metric');
   const currency = await getSetting('currency', 'EUR');
+  const consumptionMode = await getSetting('consumptionMode', 'km/l');
   const fillups = await getFillups(vehicleId);
 
   const vehicleName = activeVehicle ? activeVehicle.name : 'Vehicle';
@@ -40,10 +41,10 @@ export async function renderFillupList(vehicleId) {
     <div id="fillup-list" class="list"></div>
   `;
 
-  renderList(fillups, units, currency);
+  renderList(fillups, units, currency, consumptionMode);
 }
 
-function renderList(fillups, units, currency) {
+function renderList(fillups, units, currency, consumptionMode) {
   const listEl = document.getElementById('fillup-list');
   if (!listEl) return;
 
@@ -55,13 +56,25 @@ function renderList(fillups, units, currency) {
   // Most recent first
   const sorted = [...fillups].sort((a, b) => new Date(b.date) - new Date(a.date));
 
+  // Full tanks close an interval and carry its avg consumption; partials
+  // accumulate into the open interval and show nothing until then.
+  const intervalByClosingId = closingIntervals(fillups);
+  const modeLabel = consumptionMode === 'l/100km' ? 'l/100km' : 'km/l';
+  const consLabelFor = (f) => {
+    const isFull = f.full === true || f.full === 1 || f.full === '1';
+    if (!isFull) return '';
+    const iv = intervalByClosingId.get(String(f.id));
+    if (!iv || !(iv.consumption > 0)) return '';
+    return ` &bull; ${formatConsumption(iv.consumption, consumptionMode)} ${modeLabel}`;
+  };
+
   listEl.innerHTML = sorted.map((f) => {
     const date = f.date.slice(0, 10).replace(/-/g, '/');
     return `
       <div class="list-row fillup-row" data-id="${f.id}">
         <div class="main">
-          <div class="title">${escapeHtml(date)} <span class="row-odo">${escapeHtml(f.odo)} km</span></div>
-          <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)} &bull; ${f.full ? 'Full' : 'Partial'}${f.fuelType ? ' &bull; ' + escapeHtml(f.fuelType) : ''}</div>
+          <div class="title">${escapeHtml(date)} &bull; <span class="row-odo">${escapeHtml(f.odo)} km</span></div>
+          <div class="subtitle">${formatVolume(parseFloat(f.liters), units)} &bull; ${formatCost(parseFloat(f.cost), currency)}${consLabelFor(f)} &bull; ${f.full ? 'Full' : 'Partial'}${f.fuelType ? ' &bull; ' + escapeHtml(f.fuelType) : ''}</div>
         </div>
         <div class="trailing">${iconChevronRight(16)}</div>
       </div>
